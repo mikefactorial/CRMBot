@@ -33,9 +33,9 @@ namespace CRMBot
         private string[] RejectionStrings = new string[]
         {
             "I'm sorry I can't do that. You must CLOSE ALL DEALS!",
-            "Not gonna happen",
             "Nope",
             "Nie",
+            "Not gonna happen",
             "Uh-uh",
             "Sorry",
             "We're done here",
@@ -58,6 +58,11 @@ namespace CRMBot
 
                 string bestIntention = string.Empty;
                 double max = 0.00;
+                if (response.Data == null)
+                {
+                    return message.CreateReplyMessage($"Damn you demo Gods!!! I can't seem to connect to the internet. Please check your connection.");
+
+                }
                 foreach (var intent in response.Data.intents)
                 {
                     if (max < intent.score)
@@ -85,7 +90,11 @@ namespace CRMBot
                         string parentEntity = string.Empty;
 
                         string entityType = response.Data.entities[0].entity;
-
+                        //Hack
+                        if (entityType.EndsWith("s"))
+                        {
+                            entityType = entityType.Substring(0, entityType.Length - 1);
+                        }
                         QueryExpression expression = new QueryExpression(entityType);
                         if (CrmHelper.SelectedEntity != null)
                         {
@@ -118,9 +127,11 @@ namespace CRMBot
                         entity["subject"] = $"Follow up with {CrmHelper.SelectedEntity[metadata.PrimaryNameAttribute]}";
                         entity["regardingobjectid"] = new EntityReference(CrmHelper.SelectedEntity.LogicalName, CrmHelper.SelectedEntity.Id);
 
+                        DateTime date = DateTime.MinValue;
                         if (response.Data != null && response.Data.entities != null && response.Data.entities.Count > 0 && response.Data.entities[0].resolution != null)
                         {
-                            entity["scheduledend"] = DateTime.Parse(response.Data.entities[0].resolution.date);
+                            date = DateTime.Parse(response.Data.entities[0].resolution.date);
+                            entity["scheduledend"] = date;
                         }
 
                         try
@@ -135,8 +146,14 @@ namespace CRMBot
                             return message.CreateReplyMessage(ex.Message);
                             throw;
                         }
-
-                        return message.CreateReplyMessage($"Okay...I've created task to follow up with {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]} on");
+                        if (date != DateTime.MinValue)
+                        {
+                            return message.CreateReplyMessage($"Okay...I've created task to follow up with {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]} on { date.ToLongDateString() }");
+                        }
+                        else
+                        {
+                            return message.CreateReplyMessage($"Okay...I've created task to follow up with {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]}");
+                        }
                     }
                     else
                     {
@@ -176,6 +193,10 @@ namespace CRMBot
                             {
                                 CrmHelper.SelectedEntity = collection.Entities[0];
                                 output = $"I found a {entityType} named {collection.Entities[0]["firstname"]} {collection.Entities[0]["lastname"]} from {collection.Entities[0]["address1_city"]} what would you like to do next? ";
+                            }
+                            else
+                            {
+                                output = $"Hmmm...I couldn't find that {entityType}.";
                             }
                         }
                     }
