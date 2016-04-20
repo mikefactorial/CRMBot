@@ -51,94 +51,159 @@ namespace CRMBot
         {
             if (message.Type == "Message")
             {
-                var client = new RestClient("https://api.projectoxford.ai");
-                var request = new RestRequest("/luis/v1/application?id=cc421661-4803-4359-b19b-35a8bae3b466&subscription-key=70c9f99320804782866c3eba387d54bf&q=" + message.Text, Method.GET);
-                // automatically deserialize result
-                IRestResponse<CRMBot.LuisResults.Result> response = client.Execute<CRMBot.LuisResults.Result>(request);
-
-                string bestIntention = string.Empty;
-                double max = 0.00;
-                if (response.Data == null)
+                if (message.Text.ToLower().Contains("crminator say"))
                 {
-                    return message.CreateReplyMessage($"Damn you demo Gods!!! I can't seem to connect to the internet. Please check your connection.");
-
+                    return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("crminator say") + 14));
                 }
-                foreach (var intent in response.Data.intents)
+                else
                 {
-                    if (max < intent.score)
+                    var client = new RestClient("https://api.projectoxford.ai");
+                    var request = new RestRequest("/luis/v1/application?id=cc421661-4803-4359-b19b-35a8bae3b466&subscription-key=70c9f99320804782866c3eba387d54bf&q=" + message.Text, Method.GET);
+                    // automatically deserialize result
+                    IRestResponse<CRMBot.LuisResults.Result> response = client.Execute<CRMBot.LuisResults.Result>(request);
+
+                    string bestIntention = string.Empty;
+                    double max = 0.00;
+                    if (response.Data == null)
                     {
-                        bestIntention = intent.intent;
-                        max = intent.score;
+                        return message.CreateReplyMessage($"Damn you demo Gods!!! I can't seem to connect to the internet. Please check your connection.");
+
                     }
-                }
-
-                string output = string.Empty;
-                if (bestIntention == "RejectLead")
-                {
-                    rejectIndex++;
-                    if (rejectIndex >= RejectionStrings.Length)
+                    foreach (var intent in response.Data.intents)
                     {
-                        rejectIndex = 0;
+                        if (max < intent.score)
+                        {
+                            bestIntention = intent.intent;
+                            max = intent.score;
+                        }
                     }
-                    return message.CreateReplyMessage(RejectionStrings[rejectIndex]);
 
-                }
-                else if (bestIntention == "HowMany")
-                {
-                    if (response.Data != null && response.Data.entities != null && response.Data.entities.Count > 0 && response.Data.entities[0] != null)
+                    string output = string.Empty;
+                    if (bestIntention == "RejectLead")
                     {
-                        string parentEntity = string.Empty;
-
-                        string entityType = response.Data.entities[0].entity;
-                        //Hack
-                        if (entityType.EndsWith("s"))
+                        rejectIndex++;
+                        if (rejectIndex >= RejectionStrings.Length)
                         {
-                            entityType = entityType.Substring(0, entityType.Length - 1);
+                            rejectIndex = 0;
                         }
-                        QueryExpression expression = new QueryExpression(entityType);
-                        if (CrmHelper.SelectedEntity != null)
-                        {
-                            expression.Criteria.AddCondition("regardingobjectid", ConditionOperator.Equal, CrmHelper.SelectedEntity.Id);
-                        }
+                        return message.CreateReplyMessage(RejectionStrings[rejectIndex]);
 
-                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                    }
+                    else if (bestIntention == "HowMany")
+                    {
+                        if (response.Data != null && response.Data.entities != null && response.Data.entities.Count > 0 && response.Data.entities[0] != null)
                         {
-                            EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
-                            if (collection.Entities != null)
+                            string parentEntity = string.Empty;
+
+                            string entityType = response.Data.entities[0].entity;
+                            //Hack
+                            if (entityType.EndsWith("s"))
                             {
-                                if (CrmHelper.SelectedEntity != null)
+                                entityType = entityType.Substring(0, entityType.Length - 1);
+                            }
+                            QueryExpression expression = new QueryExpression(entityType);
+                            if (CrmHelper.SelectedEntity != null)
+                            {
+                                expression.Criteria.AddCondition("regardingobjectid", ConditionOperator.Equal, CrmHelper.SelectedEntity.Id);
+                            }
+
+                            using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                            {
+                                EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
+                                if (collection.Entities != null)
                                 {
-                                    return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} for the {CrmHelper.SelectedEntity.LogicalName} {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]}");
-                                }
-                                else
-                                {
-                                    return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} in CRM.");
+                                    if (CrmHelper.SelectedEntity != null)
+                                    {
+                                        return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} for the {CrmHelper.SelectedEntity.LogicalName} {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]}");
+                                    }
+                                    else
+                                    {
+                                        return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} in CRM.");
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                else if (bestIntention == "FollowUp")
-                {
-                    if (CrmHelper.SelectedEntity != null)
+                    else if (bestIntention == "FollowUp")
                     {
-                        Entity entity = new Entity("task");
-                        EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(CrmHelper.SelectedEntity.LogicalName);
-                        entity["subject"] = $"Follow up with {CrmHelper.SelectedEntity[metadata.PrimaryNameAttribute]}";
-                        entity["regardingobjectid"] = new EntityReference(CrmHelper.SelectedEntity.LogicalName, CrmHelper.SelectedEntity.Id);
-
-                        DateTime date = DateTime.MinValue;
-                        if (response.Data != null && response.Data.entities != null && response.Data.entities.Count > 0 && response.Data.entities[0].resolution != null)
+                        if (CrmHelper.SelectedEntity != null)
                         {
-                            date = DateTime.Parse(response.Data.entities[0].resolution.date);
-                            entity["scheduledend"] = date;
+                            Entity entity = new Entity("task");
+                            EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(CrmHelper.SelectedEntity.LogicalName);
+                            entity["subject"] = $"Follow up with {CrmHelper.SelectedEntity[metadata.PrimaryNameAttribute]}";
+                            entity["regardingobjectid"] = new EntityReference(CrmHelper.SelectedEntity.LogicalName, CrmHelper.SelectedEntity.Id);
+
+                            DateTime date = DateTime.MinValue;
+                            if (response.Data != null && response.Data.entities != null && response.Data.entities.Count > 0 && response.Data.entities[0].resolution != null)
+                            {
+                                date = DateTime.Parse(response.Data.entities[0].resolution.date);
+                                entity["scheduledend"] = date;
+                            }
+
+                            try
+                            {
+                                using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                                {
+                                    serviceProxy.Create(entity);
+                                }
+                            }
+                            catch (FaultException<OrganizationServiceFault> ex)
+                            {
+                                return message.CreateReplyMessage(ex.Message);
+                                throw;
+                            }
+                            if (date != DateTime.MinValue)
+                            {
+                                return message.CreateReplyMessage($"Okay...I've created task to follow up with {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]} on { date.ToLongDateString() }");
+                            }
+                            else
+                            {
+                                return message.CreateReplyMessage($"Okay...I've created task to follow up with {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]}");
+                            }
+                        }
+                        else
+                        {
+                            return message.CreateReplyMessage($"Hmmm...I'm not sure who to follow up with. Say for example 'Locate contact John Smith'");
+                        }
+                    }
+                    else if (bestIntention == "Locate" || bestIntention == "Select")
+                    {
+                        string entityType = string.Empty;
+                        Dictionary<string, string> atts = new Dictionary<string, string>();
+                        foreach (var entity in response.Data.entities)
+                        {
+                            if (entity.type == "EntityType")
+                            {
+                                entityType = entity.entity;
+                            }
+                            else
+                            {
+                                string[] split = entity.type.Split(':');
+                                atts.Add(split[split.Length - 1], entity.entity);
+                            }
                         }
 
                         try
                         {
                             using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
                             {
-                                serviceProxy.Create(entity);
+                                QueryExpression expression = new QueryExpression(entityType);
+                                expression.ColumnSet = new ColumnSet(true);
+                                Dictionary<string, string>.Enumerator iEnum = atts.GetEnumerator();
+                                while (iEnum.MoveNext())
+                                {
+                                    expression.Criteria.AddCondition(iEnum.Current.Key.ToLower(), ConditionOperator.Equal, iEnum.Current.Value);
+                                }
+                                EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
+                                if (collection.Entities != null && collection.Entities.Count == 1)
+                                {
+                                    CrmHelper.SelectedEntity = collection.Entities[0];
+                                    output = $"I found a {entityType} named {collection.Entities[0]["firstname"]} {collection.Entities[0]["lastname"]} from {collection.Entities[0]["address1_city"]} what would you like to do next? ";
+                                }
+                                else
+                                {
+                                    output = $"Hmmm...I couldn't find that {entityType}.";
+                                }
                             }
                         }
                         catch (FaultException<OrganizationServiceFault> ex)
@@ -146,72 +211,13 @@ namespace CRMBot
                             return message.CreateReplyMessage(ex.Message);
                             throw;
                         }
-                        if (date != DateTime.MinValue)
-                        {
-                            return message.CreateReplyMessage($"Okay...I've created task to follow up with {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]} on { date.ToLongDateString() }");
-                        }
-                        else
-                        {
-                            return message.CreateReplyMessage($"Okay...I've created task to follow up with {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]}");
-                        }
                     }
-                    else
-                    {
-                        return message.CreateReplyMessage($"Hmmm...I'm not sure who to follow up with. Say for example 'Locate contact John Smith'");
-                    }
+                    //entityType = response.Data.entities
+                    // return our reply to the user
+                    return message.CreateReplyMessage(output);
                 }
-                else if (bestIntention == "Locate" || bestIntention == "Select")
-                {
-                    string entityType = string.Empty;
-                    Dictionary<string, string> atts = new Dictionary<string, string>();
-                    foreach (var entity in response.Data.entities)
-                    {
-                        if (entity.type == "EntityType")
-                        {
-                            entityType = entity.entity;
-                        }
-                        else
-                        {
-                            string[] split = entity.type.Split(':');
-                            atts.Add(split[split.Length - 1], entity.entity);
-                        }
-                    }
-
-                    try
-                    {
-                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
-                        {
-                            QueryExpression expression = new QueryExpression(entityType);
-                            expression.ColumnSet = new ColumnSet(true);
-                            Dictionary<string, string>.Enumerator iEnum = atts.GetEnumerator();
-                            while (iEnum.MoveNext())
-                            {
-                                expression.Criteria.AddCondition(iEnum.Current.Key.ToLower(), ConditionOperator.Equal, iEnum.Current.Value);
-                            }
-                            EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
-                            if (collection.Entities != null && collection.Entities.Count == 1)
-                            {
-                                CrmHelper.SelectedEntity = collection.Entities[0];
-                                output = $"I found a {entityType} named {collection.Entities[0]["firstname"]} {collection.Entities[0]["lastname"]} from {collection.Entities[0]["address1_city"]} what would you like to do next? ";
-                            }
-                            else
-                            {
-                                output = $"Hmmm...I couldn't find that {entityType}.";
-                            }
-                        }
-                    }
-                    catch (FaultException<OrganizationServiceFault> ex)
-                    {
-                        return message.CreateReplyMessage(ex.Message);
-                        throw;
-                    }
-                }
-                //entityType = response.Data.entities
-                // return our reply to the user
-                return message.CreateReplyMessage(output);
             }
             return message.CreateReplyMessage("Sorry I didn't understand that.");
-
         }
     }
 }
