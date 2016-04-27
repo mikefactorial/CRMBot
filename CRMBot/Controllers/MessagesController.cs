@@ -64,6 +64,7 @@ namespace CRMBot
                 else if (message.Text.ToLower().Contains("say goodbye"))
                 {
                     System.Threading.Thread.Sleep(1000);
+                    CrmHelper.SelectedEntity = null;
                     return message.CreateReplyMessage("I'll Be Back...");
                 }
                 else
@@ -107,7 +108,7 @@ namespace CRMBot
                             string parentEntity = string.Empty;
 
                             string entityType = response.Data.entities[0].entity;
-                            //Hack
+                            //Hack fix to use plural name from metadata
                             if (entityType.EndsWith("s"))
                             {
                                 entityType = entityType.Substring(0, entityType.Length - 1);
