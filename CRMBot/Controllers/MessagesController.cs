@@ -53,17 +53,14 @@ namespace CRMBot
             {
                 if (message.Text.ToLower().Contains("crminator say"))
                 {
-                    System.Threading.Thread.Sleep(1000);
                     return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("crminator say") + 14));
                 }
                 else if (message.Text.ToLower().Contains("thank"))
                 {
-                    System.Threading.Thread.Sleep(1000);
                     return message.CreateReplyMessage("You're welcome!");
                 }
                 else if (message.Text.ToLower().Contains("say goodbye"))
                 {
-                    System.Threading.Thread.Sleep(1000);
                     CrmHelper.SelectedEntity = null;
                     return message.CreateReplyMessage("I'll Be Back...");
                 }

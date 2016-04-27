@@ -118,6 +118,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="CRMinator.html" />
     <Content Include="default.htm" />
     <Content Include="Global.asax" />
     <Content Include="Web.config" />
@@ -134,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
+    <None Include="Properties\PublishProfiles\CRMBot.pubxml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
