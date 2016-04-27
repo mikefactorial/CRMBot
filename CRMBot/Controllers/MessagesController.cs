@@ -53,7 +53,18 @@ namespace CRMBot
             {
                 if (message.Text.ToLower().Contains("crminator say"))
                 {
+                    System.Threading.Thread.Sleep(1000);
                     return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("crminator say") + 14));
+                }
+                else if (message.Text.ToLower().Contains("thank"))
+                {
+                    System.Threading.Thread.Sleep(1000);
+                    return message.CreateReplyMessage("You're welcome!");
+                }
+                else if (message.Text.ToLower().Contains("say goodbye"))
+                {
+                    System.Threading.Thread.Sleep(1000);
+                    return message.CreateReplyMessage("I'll Be Back...");
                 }
                 else
                 {
@@ -136,8 +147,12 @@ namespace CRMBot
                             DateTime date = DateTime.MinValue;
                             if (response.Data != null && response.Data.entities != null && response.Data.entities.Count > 0 && response.Data.entities[0].resolution != null)
                             {
-                                date = DateTime.Parse(response.Data.entities[0].resolution.date);
-                                entity["scheduledend"] = date;
+                                LuisResults.Entity dateEntity = response.Data.entities.FirstOrDefault(e => e.type == "builtin.datetime.date");
+                                if (dateEntity != null)
+                                {
+                                    date = DateTime.Parse(dateEntity.resolution.date);
+                                    entity["scheduledend"] = date;
+                                }
                             }
 
                             try
@@ -168,8 +183,10 @@ namespace CRMBot
                     }
                     else if (bestIntention == "Locate" || bestIntention == "Select")
                     {
+
                         string entityType = string.Empty;
                         Dictionary<string, string> atts = new Dictionary<string, string>();
+                        Dictionary<string, double> attScores = new Dictionary<string, double>();
                         foreach (var entity in response.Data.entities)
                         {
                             if (entity.type == "EntityType")
@@ -179,7 +196,15 @@ namespace CRMBot
                             else
                             {
                                 string[] split = entity.type.Split(':');
-                                atts.Add(split[split.Length - 1], entity.entity);
+                                if (!atts.ContainsKey(split[split.Length - 1]))
+                                {
+                                    attScores.Add(split[split.Length - 1], entity.score);
+                                    atts.Add(split[split.Length - 1], entity.entity);
+                                }
+                                else if(entity.score > attScores[split[split.Length - 1]])
+                                {
+                                    atts[split[split.Length - 1]] = entity.entity;
+                                }
                             }
                         }
 
