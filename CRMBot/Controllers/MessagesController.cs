@@ -51,9 +51,13 @@ namespace CRMBot
         {
             if (message.Type == "Message")
             {
-                if (message.Text.ToLower().Contains("crminator say"))
+                if (string.IsNullOrEmpty(message.Text) && message.Attachments != null && message.Attachments.Count > 0)
                 {
-                    return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("crminator say") + 14));
+                    return message.CreateReplyMessage("That's pretty cool, but why are you sending me pics? I'm a chatbot.");
+                }
+                else if (message.Text.ToLower().Contains("say"))
+                {
+                    return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
                 }
                 else if (message.Text.ToLower().Contains("thank"))
                 {
@@ -61,7 +65,7 @@ namespace CRMBot
                 }
                 else if (message.Text.ToLower().Contains("say goodbye"))
                 {
-                    CrmHelper.SelectedEntity = null;
+                    ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = null;
                     return message.CreateReplyMessage("I'll Be Back...");
                 }
                 else
@@ -76,7 +80,6 @@ namespace CRMBot
                     if (response.Data == null)
                     {
                         return message.CreateReplyMessage($"Damn you demo Gods!!! I can't seem to connect to the internet. Please check your connection.");
-
                     }
                     foreach (var intent in response.Data.intents)
                     {
@@ -111,9 +114,9 @@ namespace CRMBot
                                 entityType = entityType.Substring(0, entityType.Length - 1);
                             }
                             QueryExpression expression = new QueryExpression(entityType);
-                            if (CrmHelper.SelectedEntity != null)
+                            if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
                             {
-                                expression.Criteria.AddCondition("regardingobjectid", ConditionOperator.Equal, CrmHelper.SelectedEntity.Id);
+                                expression.Criteria.AddCondition("regardingobjectid", ConditionOperator.Equal, ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.Id);
                             }
 
                             using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
@@ -121,9 +124,9 @@ namespace CRMBot
                                 EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
                                 if (collection.Entities != null)
                                 {
-                                    if (CrmHelper.SelectedEntity != null)
+                                    if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
                                     {
-                                        return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} for the {CrmHelper.SelectedEntity.LogicalName} {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]}");
+                                        return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} for the {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]}");
                                     }
                                     else
                                     {
@@ -135,12 +138,12 @@ namespace CRMBot
                     }
                     else if (bestIntention == "FollowUp")
                     {
-                        if (CrmHelper.SelectedEntity != null)
+                        if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
                         {
                             Entity entity = new Entity("task");
-                            EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(CrmHelper.SelectedEntity.LogicalName);
-                            entity["subject"] = $"Follow up with {CrmHelper.SelectedEntity[metadata.PrimaryNameAttribute]}";
-                            entity["regardingobjectid"] = new EntityReference(CrmHelper.SelectedEntity.LogicalName, CrmHelper.SelectedEntity.Id);
+                            EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName);
+                            entity["subject"] = $"Follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity[metadata.PrimaryNameAttribute]}";
+                            entity["regardingobjectid"] = new EntityReference(ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName, ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.Id);
 
                             DateTime date = DateTime.MinValue;
                             if (response.Data != null && response.Data.entities != null && response.Data.entities.Count > 0 && response.Data.entities[0].resolution != null)
@@ -167,11 +170,11 @@ namespace CRMBot
                             }
                             if (date != DateTime.MinValue)
                             {
-                                return message.CreateReplyMessage($"Okay...I've created task to follow up with {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]} on { date.ToLongDateString() }");
+                                return message.CreateReplyMessage($"Okay...I've created task to follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]} on { date.ToLongDateString() }");
                             }
                             else
                             {
-                                return message.CreateReplyMessage($"Okay...I've created task to follow up with {CrmHelper.SelectedEntity["firstname"]} {CrmHelper.SelectedEntity["lastname"]}");
+                                return message.CreateReplyMessage($"Okay...I've created task to follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]}");
                             }
                         }
                         else
@@ -220,7 +223,7 @@ namespace CRMBot
                                 EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
                                 if (collection.Entities != null && collection.Entities.Count == 1)
                                 {
-                                    CrmHelper.SelectedEntity = collection.Entities[0];
+                                    ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = collection.Entities[0];
                                     output = $"I found a {entityType} named {collection.Entities[0]["firstname"]} {collection.Entities[0]["lastname"]} from {collection.Entities[0]["address1_city"]} what would you like to do next? ";
                                 }
                                 else

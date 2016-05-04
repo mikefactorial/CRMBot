@@ -13,7 +13,6 @@ namespace CRMBot
 {
     public class CrmHelper
     {
-        public static Entity SelectedEntity = null;
         public static EntityMetadata RetrieveEntityMetadata(string entityLogicalName)
         {
             RetrieveEntityRequest request = new RetrieveEntityRequest();
