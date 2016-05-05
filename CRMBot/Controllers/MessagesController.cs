@@ -181,21 +181,24 @@ namespace CRMBot
                         Dictionary<string, double> attScores = new Dictionary<string, double>();
                         foreach (var entity in response.Data.entities)
                         {
-                            if (entity.type == "EntityType")
+                            if (entity.score > .5)
                             {
-                                entityType = entity.entity;
-                            }
-                            else
-                            {
-                                string[] split = entity.type.Split(':');
-                                if (!atts.ContainsKey(split[split.Length - 1]))
+                                if (entity.type == "EntityType")
                                 {
-                                    attScores.Add(split[split.Length - 1], entity.score);
-                                    atts.Add(split[split.Length - 1], entity.entity);
+                                    entityType = entity.entity;
                                 }
-                                else if(entity.score > attScores[split[split.Length - 1]])
+                                else
                                 {
-                                    atts[split[split.Length - 1]] = entity.entity;
+                                    string[] split = entity.type.Split(':');
+                                    if (!atts.ContainsKey(split[split.Length - 1]))
+                                    {
+                                        attScores.Add(split[split.Length - 1], entity.score);
+                                        atts.Add(split[split.Length - 1], entity.entity);
+                                    }
+                                    else if (entity.score > attScores[split[split.Length - 1]])
+                                    {
+                                        atts[split[split.Length - 1]] = entity.entity;
+                                    }
                                 }
                             }
                         }
