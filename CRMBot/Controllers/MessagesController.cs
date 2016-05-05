@@ -55,18 +55,18 @@ namespace CRMBot
                 {
                     return message.CreateReplyMessage("That's pretty cool, but why are you sending me pics? I'm a chatbot.");
                 }
-                else if (message.Text.ToLower().Contains("say"))
+                else if (message.Text.ToLower().Contains("say goodbye"))
                 {
-                    return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
+                    ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = null;
+                    return message.CreateReplyMessage("I'll Be Back...");
                 }
                 else if (message.Text.ToLower().Contains("thank"))
                 {
                     return message.CreateReplyMessage("You're welcome!");
                 }
-                else if (message.Text.ToLower().Contains("say goodbye"))
+                else if (message.Text.ToLower().Contains("say"))
                 {
-                    ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = null;
-                    return message.CreateReplyMessage("I'll Be Back...");
+                    return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
                 }
                 else
                 {
@@ -74,21 +74,12 @@ namespace CRMBot
                     var request = new RestRequest("/luis/v1/application?id=cc421661-4803-4359-b19b-35a8bae3b466&subscription-key=70c9f99320804782866c3eba387d54bf&q=" + message.Text, Method.GET);
                     // automatically deserialize result
                     IRestResponse<CRMBot.LuisResults.Result> response = client.Execute<CRMBot.LuisResults.Result>(request);
-
-                    string bestIntention = string.Empty;
-                    double max = 0.00;
                     if (response.Data == null)
                     {
-                        return message.CreateReplyMessage($"Damn you demo Gods!!! I can't seem to connect to the internet. Please check your connection.");
+                        return message.CreateReplyMessage($"Hmmm...I can't seem to connect to the internet. Please check your connection.");
                     }
-                    foreach (var intent in response.Data.intents)
-                    {
-                        if (max < intent.score)
-                        {
-                            bestIntention = intent.intent;
-                            max = intent.score;
-                        }
-                    }
+
+                    string bestIntention = response.Data.RetrieveIntention();
 
                     string output = string.Empty;
                     if (bestIntention == "RejectLead")

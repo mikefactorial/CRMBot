@@ -37,5 +37,21 @@ namespace CRMBot.LuisResults
         public string query { get; set; }
         public List<Intent> intents { get; set; }
         public List<Entity> entities { get; set; }
+
+
+        public string RetrieveIntention()
+        {
+            double max = 0.00;
+            string bestIntention = string.Empty;
+            foreach (var intent in this.intents)
+            {
+                if (max < intent.score)
+                {
+                    bestIntention = intent.intent;
+                    max = intent.score;
+                }
+            }
+            return bestIntention;
+        }
     }
 }
