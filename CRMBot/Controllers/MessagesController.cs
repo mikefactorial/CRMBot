@@ -70,16 +70,14 @@ namespace CRMBot
                 }
                 else
                 {
-                    var client = new RestClient("https://api.projectoxford.ai");
-                    var request = new RestRequest("/luis/v1/application?id=cc421661-4803-4359-b19b-35a8bae3b466&subscription-key=70c9f99320804782866c3eba387d54bf&q=" + message.Text, Method.GET);
-                    // automatically deserialize result
-                    IRestResponse<CRMBot.LuisResults.Result> response = client.Execute<CRMBot.LuisResults.Result>(request);
-                    if (response.Data == null)
+                    CRMBot.LuisResults.Result result = CRMBot.LuisResults.Result.Parse(message.Text);
+
+                    if (result == null)
                     {
                         return message.CreateReplyMessage($"Hmmm...I can't seem to connect to the internet. Please check your connection.");
                     }
 
-                    string bestIntention = response.Data.RetrieveIntention();
+                    string bestIntention = result.RetrieveIntention();
 
                     string output = string.Empty;
                     if (bestIntention == "RejectLead")
@@ -92,36 +90,49 @@ namespace CRMBot
                         return message.CreateReplyMessage(RejectionStrings[rejectIndex]);
 
                     }
+                    else if (bestIntention == "Send")
+                    {
+                        //Send email
+                        //string emailAddress = result.entities.Where(e => e.type == "Email").Max(e => e.score);
+
+                        string email = string.Empty;
+                    }
                     else if (bestIntention == "HowMany")
                     {
-                        if (response.Data != null && response.Data.entities != null && response.Data.entities.Count > 0 && response.Data.entities[0] != null)
+                        if (result != null && result.entities != null && result.entities.Count > 0 && result.entities[0] != null)
                         {
                             string parentEntity = string.Empty;
 
-                            string entityType = response.Data.entities[0].entity;
-                            //Hack fix to use plural name from metadata
-                            if (entityType.EndsWith("s"))
+                            CRMBot.LuisResults.Entity entity = result.RetrieveEntity(CRMBot.LuisResults.EntityTypeNames.EntityType);
+                            if (entity != null && !string.IsNullOrEmpty(entity.entity))
                             {
-                                entityType = entityType.Substring(0, entityType.Length - 1);
-                            }
-                            QueryExpression expression = new QueryExpression(entityType);
-                            if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
-                            {
-                                expression.Criteria.AddCondition("regardingobjectid", ConditionOperator.Equal, ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.Id);
-                            }
-
-                            using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
-                            {
-                                EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
-                                if (collection.Entities != null)
+                                string entityType = entity.entity;
+                                //TODO Hack fix to use plural name from metadata
+                                if (entityType.EndsWith("s"))
                                 {
-                                    if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
+                                    entityType = entityType.Substring(0, entityType.Length - 1);
+                                }
+                                EntityMetadata entityMetadata = CrmHelper.RetrieveEntityMetadata(entityType);
+                                QueryExpression expression = new QueryExpression(entityType);
+                                //TODO make this smarter based on relationship metadata
+                                if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null && entityMetadata.Attributes.Any(a => a.LogicalName == "regardingobjectid"))
+                                {
+                                    expression.Criteria.AddCondition("regardingobjectid", ConditionOperator.Equal, ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.Id);
+                                }
+
+                                using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                                {
+                                    EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
+                                    if (collection.Entities != null)
                                     {
-                                        return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} for the {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]}");
-                                    }
-                                    else
-                                    {
-                                        return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} in CRM.");
+                                        if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
+                                        {
+                                            return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} for the {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]}");
+                                        }
+                                        else
+                                        {
+                                            return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} in CRM.");
+                                        }
                                     }
                                 }
                             }
@@ -137,14 +148,12 @@ namespace CRMBot
                             entity["regardingobjectid"] = new EntityReference(ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName, ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.Id);
 
                             DateTime date = DateTime.MinValue;
-                            if (response.Data != null && response.Data.entities != null && response.Data.entities.Count > 0 && response.Data.entities[0].resolution != null)
+                            CRMBot.LuisResults.Entity dateEntity = result.RetrieveEntity(CRMBot.LuisResults.EntityTypeNames.DateTime);
+
+                            if (dateEntity != null && dateEntity.resolution != null)
                             {
-                                LuisResults.Entity dateEntity = response.Data.entities.FirstOrDefault(e => e.type == "builtin.datetime.date");
-                                if (dateEntity != null)
-                                {
-                                    date = DateTime.Parse(dateEntity.resolution.date);
-                                    entity["scheduledend"] = date;
-                                }
+                                date = DateTime.Parse(dateEntity.resolution.date);
+                                entity["scheduledend"] = date;
                             }
 
                             try
@@ -179,7 +188,7 @@ namespace CRMBot
                         string entityType = string.Empty;
                         Dictionary<string, string> atts = new Dictionary<string, string>();
                         Dictionary<string, double> attScores = new Dictionary<string, double>();
-                        foreach (var entity in response.Data.entities)
+                        foreach (var entity in result.entities)
                         {
                             if (entity.score > .5)
                             {
@@ -232,12 +241,15 @@ namespace CRMBot
                             throw;
                         }
                     }
-                    //entityType = response.Data.entities
+                    //entityType = result.entities
                     // return our reply to the user
-                    return message.CreateReplyMessage(output);
+                    if (!string.IsNullOrEmpty(output))
+                    {
+                        return message.CreateReplyMessage(output);
+                    }
                 }
             }
-            return message.CreateReplyMessage("Sorry I didn't understand that.");
+            return message.CreateReplyMessage("Sorry, I didn't understand that. I'm still learning. Hopefully my human trainers will help me understand that request next time.");
         }
     }
 }

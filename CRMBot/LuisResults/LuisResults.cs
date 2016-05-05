@@ -1,10 +1,21 @@
-﻿using System;
+﻿using RestSharp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 
 namespace CRMBot.LuisResults
 {
+    public class EntityTypeNames
+    {
+        public const string EntityType = "EntityType";
+        public const string Action = "Action";
+        public const string CompanyName = "CompanyName";
+        public const string AttributeName = "AttributeName";
+        public const string AttributeValue = "AttributeValue";
+        public const string EmailAddress = "EmailAddress";
+        public const string DateTime = "builtin.datetime.date";
+    }
     public class Action
     {
         public bool triggered { get; set; }
@@ -52,6 +63,30 @@ namespace CRMBot.LuisResults
                 }
             }
             return bestIntention;
+        }
+
+        public Entity RetrieveEntity(string entityType)
+        {
+            double max = 0.00;
+            Entity bestEntity = null;
+            foreach (var entity in this.entities.Where(e => e.type == entityType))
+            {
+                if (max < entity.score)
+                {
+                    bestEntity = entity;
+                    max = entity.score;
+                }
+            }
+            return bestEntity;
+        }
+
+        public static Result Parse(string message)
+        {
+            var client = new RestClient("https://api.projectoxford.ai");
+            var request = new RestRequest("/luis/v1/application?id=cc421661-4803-4359-b19b-35a8bae3b466&subscription-key=70c9f99320804782866c3eba387d54bf&q=" + message, Method.GET);
+            // automatically deserialize result
+            IRestResponse<Result> response = client.Execute<Result>(request);
+            return response.Data;
         }
     }
 }
