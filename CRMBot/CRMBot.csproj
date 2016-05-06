@@ -83,8 +83,9 @@
       <HintPath>..\packages\WindowsAzure.Storage.7.0.0\lib\net40\Microsoft.WindowsAzure.Storage.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.Xrm.Client">
-      <HintPath>..\CRMSimpleConsole1\bin\Debug\Microsoft.Xrm.Client.dll</HintPath>
+    <Reference Include="microsoft.xrm.client, Version=5.0.9689.2166, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Xrm.Client.2011.5.0.18\lib\net40\microsoft.xrm.client.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Xrm.Sdk, Version=8.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CrmSdk.CoreAssemblies.8.0.2.1\lib\net45\Microsoft.Xrm.Sdk.dll</HintPath>
