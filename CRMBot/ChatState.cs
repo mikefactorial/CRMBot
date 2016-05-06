@@ -5,12 +5,15 @@ using System.Linq;
 using System.Runtime.Caching;
 using System.Web;
 using Microsoft.WindowsAzure.Storage.Table;
+using Microsoft.Bot.Connector;
 
 namespace CRMBot
 {
     public class ChatState
     {
         private static double chatCacheDurationMinutes = 30.0000;
+
+        public List<byte[]> Attachments { get; set; }
 
         public Entity SelectedEntity { get; set; }
 

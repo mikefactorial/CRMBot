@@ -13,30 +13,26 @@ namespace CRMBot
 {
     public class CrmHelper
     {
-        public static EntityMetadata RetrieveEntityMetadata(string entityLogicalName)
+        private static EntityMetadata[] metadata = null;
+        public static EntityMetadata[] RetrieveMetadata()
         {
-            RetrieveEntityRequest request = new RetrieveEntityRequest();
-            request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.Entity;
-            request.LogicalName = entityLogicalName;
-            RetrieveEntityResponse response;
-            using (OrganizationServiceProxy service = CreateOrganizationService())
+            if (metadata == null)
             {
-                response = (RetrieveEntityResponse)service.Execute(request);
+                RetrieveAllEntitiesRequest request = new RetrieveAllEntitiesRequest();
+                request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.All;
+                RetrieveAllEntitiesResponse response;
+                using (OrganizationServiceProxy service = CreateOrganizationService())
+                {
+                    response = (RetrieveAllEntitiesResponse)service.Execute(request);
+                }
+                metadata = response.EntityMetadata;
             }
-            return response.EntityMetadata;
+            return metadata;
         }
 
-        public static EntityMetadata RetrieveEntityRelationships(string entityLogicalName)
+        public static EntityMetadata RetrieveEntityMetadata(string entityLogicalName)
         {
-            RetrieveEntityRequest request = new RetrieveEntityRequest();
-            request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.Relationships;
-            request.LogicalName = entityLogicalName;
-            RetrieveEntityResponse response;
-            using (OrganizationServiceProxy service = CreateOrganizationService())
-            {
-                response = (RetrieveEntityResponse)service.Execute(request);
-            }
-            return response.EntityMetadata;
+            return RetrieveMetadata().FirstOrDefault(e => e.LogicalName == entityLogicalName);
         }
         public static OrganizationServiceProxy CreateOrganizationService()
         {

@@ -29,7 +29,25 @@ namespace CRMBot
     [BotAuthentication]
     public class MessagesController : ApiController
     {
+        private string[] AttachmentActionPhrases = new string[]
+        {
+            "\"Attach as subject 'Powerpoint Presentation'\"",
+            "\"Attach as subject 'Profile Pic'\""
+        };
+        private string[] ActionPhrases = new string[]
+        {
+            "\"How many tasks, emails etc.\"",
+            "\"Follow up July 12 2016\"",
+            "\"Follow up next Tuesday\"",
+            "Send me an image and say \"Attach as 'Profile Pic'\""
+        };
 
+        private string[] FindActionPhrases = new string[]
+        {
+            "Find contact Dave Grohl\"",
+            "Find lead Susan Anthony\"",
+            "Find opportunity Roger Waters\"" 
+        };
         private string[] RejectionStrings = new string[]
         {
             "I'm sorry I can't do that. You must CLOSE ALL DEALS!",
@@ -49,207 +67,240 @@ namespace CRMBot
         /// </summary>
         public Message Post([FromBody]Message message)
         {
-            if (message.Type == "Message")
+            try
             {
-                if (string.IsNullOrEmpty(message.Text) && message.Attachments != null && message.Attachments.Count > 0)
+                if (message.Type == "Message")
                 {
-                    return message.CreateReplyMessage("That's pretty cool, but why are you sending me pics? I'm a chatbot.");
-                }
-                else if (message.Text.ToLower().Contains("say goodbye"))
-                {
-                    ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = null;
-                    return message.CreateReplyMessage("I'll Be Back...");
-                }
-                else if (message.Text.ToLower().Contains("thank"))
-                {
-                    return message.CreateReplyMessage("You're welcome!");
-                }
-                else if (message.Text.ToLower().Contains("say"))
-                {
-                    return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
-                }
-                else
-                {
-                    CRMBot.LuisResults.Result result = CRMBot.LuisResults.Result.Parse(message.Text);
-
-                    if (result == null)
+                    if (message.Attachments != null && message.Attachments.Count > 0)
                     {
-                        return message.CreateReplyMessage($"Hmmm...I can't seem to connect to the internet. Please check your connection.");
-                    }
-
-                    string bestIntention = result.RetrieveIntention();
-
-                    string output = string.Empty;
-                    if (bestIntention == "RejectLead")
-                    {
-                        rejectIndex++;
-                        if (rejectIndex >= RejectionStrings.Length)
+                        List<byte[]> attachments = new List<byte[]>();
+                        foreach (Attachment attach in message.Attachments)
                         {
-                            rejectIndex = 0;
-                        }
-                        return message.CreateReplyMessage(RejectionStrings[rejectIndex]);
-
-                    }
-                    else if (bestIntention == "Send")
-                    {
-                        //Send email
-                        //string emailAddress = result.entities.Where(e => e.type == "Email").Max(e => e.score);
-
-                        string email = string.Empty;
-                    }
-                    else if (bestIntention == "HowMany")
-                    {
-                        if (result != null && result.entities != null && result.entities.Count > 0 && result.entities[0] != null)
-                        {
-                            string parentEntity = string.Empty;
-
-                            CRMBot.LuisResults.Entity entity = result.RetrieveEntity(CRMBot.LuisResults.EntityTypeNames.EntityType);
-                            if (entity != null && !string.IsNullOrEmpty(entity.entity))
+                            if (!string.IsNullOrEmpty(attach.ContentUrl))
                             {
-                                string entityType = entity.entity;
-                                //TODO Hack fix to use plural name from metadata
-                                if (entityType.EndsWith("s"))
-                                {
-                                    entityType = entityType.Substring(0, entityType.Length - 1);
-                                }
-                                EntityMetadata entityMetadata = CrmHelper.RetrieveEntityMetadata(entityType);
-                                QueryExpression expression = new QueryExpression(entityType);
-                                //TODO make this smarter based on relationship metadata
-                                if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null && entityMetadata.Attributes.Any(a => a.LogicalName == "regardingobjectid"))
-                                {
-                                    expression.Criteria.AddCondition("regardingobjectid", ConditionOperator.Equal, ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.Id);
-                                }
+                                attachments.Add(new System.Net.WebClient().DownloadData(attach.ContentUrl));
+                            }
+                        }
+                        ChatState.RetrieveChatState(message.ConversationId).Attachments = attachments;
 
-                                using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                        if (string.IsNullOrEmpty(message.Text))
+                        {
+                            return message.CreateReplyMessage($"I got your file. What would you like to do with it? You can say {string.Join(" or ", AttachmentActionPhrases)}.");
+                        }
+                    }
+                    if (message.Text.ToLower().Contains("forget"))
+                    {
+                        ChatState.RetrieveChatState(message.ConversationId).Attachments = null;
+                        if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
+                        {
+                            EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName);
+                            string primaryAtt = ChatState.RetrieveChatState(message.ConversationId).SelectedEntity[metadata.PrimaryNameAttribute].ToString();
+                            ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = null;
+                            return message.CreateReplyMessage($"Okay. We're done with {primaryAtt}");
+                        }
+                        return message.CreateReplyMessage($"Okay. We're done with that");
+                    }
+                    else if (message.Text.ToLower().Contains("say goodbye"))
+                    {
+                        ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = null;
+                        ChatState.RetrieveChatState(message.ConversationId).Attachments = null;
+                        return message.CreateReplyMessage("I'll Be Back...");
+                    }
+                    else if (message.Text.ToLower().Contains("thank"))
+                    {
+                        return message.CreateReplyMessage("You're welcome!");
+                    }
+                    else if (message.Text.ToLower().Contains("say"))
+                    {
+                        return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
+                    }
+                    else
+                    {
+                        CRMBot.LuisResults.Result result = CRMBot.LuisResults.Result.Parse(message.Text);
+
+                        if (result == null)
+                        {
+                            return message.CreateReplyMessage($"Hmmm...I can't seem to connect to the internet. Please check your connection.");
+                        }
+
+                        string bestIntention = result.RetrieveIntention();
+
+                        string output = string.Empty;
+                        if (bestIntention == "RejectLead")
+                        {
+                            rejectIndex++;
+                            if (rejectIndex >= RejectionStrings.Length)
+                            {
+                                rejectIndex = 0;
+                            }
+                            return message.CreateReplyMessage(RejectionStrings[rejectIndex]);
+
+                        }
+                        else if (bestIntention == "Attach")
+                        {
+                            if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
+                            {
+                                Entity relatedEntity = ChatState.RetrieveChatState(message.ConversationId).SelectedEntity;
+                                LuisResults.Entity subjectEntity = result.RetrieveEntity(LuisResults.EntityTypeNames.AttributeValue);
+                                string subject = "Attachment";
+                                if (subjectEntity != null && !string.IsNullOrEmpty(subjectEntity.entity))
                                 {
-                                    EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
-                                    if (collection.Entities != null)
+                                    subject = subjectEntity.entity;
+                                }
+                                int i = 1;
+                                foreach (byte[] attachment in ChatState.RetrieveChatState(message.ConversationId).Attachments)
+                                {
+                                    Entity annotation = new Entity("annotation");
+                                    annotation["objectid"] = new EntityReference() { Id = relatedEntity.Id, LogicalName = relatedEntity.LogicalName };
+                                    string encodedData = System.Convert.ToBase64String(attachment);
+
+                                    annotation["filename"] = subject + i;
+                                    annotation["subject"] = subject;
+                                    annotation["mimetype"] = "application /octet-stream";
+                                    annotation["documentbody"] = encodedData;
+
+                                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
                                     {
-                                        if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
-                                        {
-                                            return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} for the {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]}");
-                                        }
-                                        else
-                                        {
-                                            return message.CreateReplyMessage($"I found {collection.Entities.Count} {entityType} in CRM.");
-                                        }
+                                        serviceProxy.Create(annotation);
+                                        return message.CreateReplyMessage($"Okay. I've attached the file to {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]} as a note with the Subject '{annotation["subject"]}'");
                                     }
                                 }
                             }
-                        }
-                    }
-                    else if (bestIntention == "FollowUp")
-                    {
-                        if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
-                        {
-                            Entity entity = new Entity("task");
-                            EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName);
-                            entity["subject"] = $"Follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity[metadata.PrimaryNameAttribute]}";
-                            entity["regardingobjectid"] = new EntityReference(ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName, ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.Id);
-
-                            DateTime date = DateTime.MinValue;
-                            CRMBot.LuisResults.Entity dateEntity = result.RetrieveEntity(CRMBot.LuisResults.EntityTypeNames.DateTime);
-
-                            if (dateEntity != null && dateEntity.resolution != null)
+                            else
                             {
-                                date = DateTime.Parse(dateEntity.resolution.date);
-                                entity["scheduledend"] = date;
+                                return message.CreateReplyMessage($"There's nothing to attach the file to. Say {string.Join(" or ", FindActionPhrases)} to find a record to attach this to.");
                             }
+                        }
+                        else if (bestIntention == "Send")
+                        {
+                            //Send email
+                            //string emailAddress = result.entities.Where(e => e.type == "Email").Max(e => e.score);
 
-                            try
+                            string email = string.Empty;
+                        }
+                        else if (bestIntention == "HowMany")
+                        {
+                            return MessageHandler.HandleHowMany(message, result);
+                        }
+                        else if (bestIntention == "FollowUp")
+                        {
+                            if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
                             {
+                                Entity entity = new Entity("task");
+                                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName);
+                                entity["subject"] = $"Follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity[metadata.PrimaryNameAttribute]}";
+                                entity["regardingobjectid"] = new EntityReference(ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName, ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.Id);
+
+                                DateTime date = DateTime.MinValue;
+                                CRMBot.LuisResults.Entity dateEntity = result.RetrieveEntity(CRMBot.LuisResults.EntityTypeNames.DateTime);
+
+                                if (dateEntity != null)
+                                {
+                                    DateTime[] dates = dateEntity.ParseDateTimes();
+                                    if (dates != null && dates.Length > 0)
+                                    {
+                                        entity["scheduledend"] = dates[0];
+                                        date = dates[0];
+                                    }
+                                }
+
                                 using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
                                 {
                                     serviceProxy.Create(entity);
                                 }
-                            }
-                            catch (FaultException<OrganizationServiceFault> ex)
-                            {
-                                return message.CreateReplyMessage(ex.Message);
-                                throw;
-                            }
-                            if (date != DateTime.MinValue)
-                            {
-                                return message.CreateReplyMessage($"Okay...I've created task to follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]} on { date.ToLongDateString() }");
+                                if (date != DateTime.MinValue)
+                                {
+                                    return message.CreateReplyMessage($"Okay...I've created task to follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]} on { date.ToLongDateString() }");
+                                }
+                                else
+                                {
+                                    return message.CreateReplyMessage($"Okay...I've created task to follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]}");
+                                }
                             }
                             else
                             {
-                                return message.CreateReplyMessage($"Okay...I've created task to follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]}");
+                                return message.CreateReplyMessage($"Hmmm...I'm not sure who to follow up with. Say for example 'Locate contact John Smith'");
                             }
                         }
-                        else
+                        else if (bestIntention == "Locate" || bestIntention == "Select")
                         {
-                            return message.CreateReplyMessage($"Hmmm...I'm not sure who to follow up with. Say for example 'Locate contact John Smith'");
-                        }
-                    }
-                    else if (bestIntention == "Locate" || bestIntention == "Select")
-                    {
-
-                        string entityType = string.Empty;
-                        Dictionary<string, string> atts = new Dictionary<string, string>();
-                        Dictionary<string, double> attScores = new Dictionary<string, double>();
-                        foreach (var entity in result.entities)
-                        {
-                            if (entity.score > .5)
+                            LuisResults.Entity entityTypeEntity = result.RetrieveEntity(LuisResults.EntityTypeNames.EntityType);
+                            if (entityTypeEntity != null)
                             {
-                                if (entity.type == "EntityType")
+                                LuisResults.Entity dateEntity = result.RetrieveEntity(LuisResults.EntityTypeNames.DateTime);
+                                if (dateEntity != null)
                                 {
-                                    entityType = entity.entity;
+                                    return MessageHandler.HandleHowMany(message, result);
                                 }
                                 else
                                 {
-                                    string[] split = entity.type.Split(':');
-                                    if (!atts.ContainsKey(split[split.Length - 1]))
+                                    string entityType = entityTypeEntity.entity;
+                                    EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(entityType);
+                                    Dictionary<string, string> atts = new Dictionary<string, string>();
+                                    Dictionary<string, double> attScores = new Dictionary<string, double>();
+                                    foreach (var entity in result.entities)
                                     {
-                                        attScores.Add(split[split.Length - 1], entity.score);
-                                        atts.Add(split[split.Length - 1], entity.entity);
+                                        if (entity.score > .5)
+                                        {
+                                            if (entity.type != "EntityType")
+                                            {
+                                                string[] split = entity.type.Split(':');
+                                                if (!atts.ContainsKey(split[split.Length - 1]))
+                                                {
+                                                    attScores.Add(split[split.Length - 1], entity.score);
+                                                    atts.Add(split[split.Length - 1], entity.entity);
+                                                }
+                                                else if (entity.score > attScores[split[split.Length - 1]])
+                                                {
+                                                    atts[split[split.Length - 1]] = entity.entity;
+                                                }
+                                            }
+                                        }
                                     }
-                                    else if (entity.score > attScores[split[split.Length - 1]])
-                                    {
-                                        atts[split[split.Length - 1]] = entity.entity;
-                                    }
-                                }
-                            }
-                        }
 
-                        try
-                        {
-                            using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
-                            {
-                                QueryExpression expression = new QueryExpression(entityType);
-                                expression.ColumnSet = new ColumnSet(true);
-                                Dictionary<string, string>.Enumerator iEnum = atts.GetEnumerator();
-                                while (iEnum.MoveNext())
-                                {
-                                    expression.Criteria.AddCondition(iEnum.Current.Key.ToLower(), ConditionOperator.Equal, iEnum.Current.Value);
-                                }
-                                EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
-                                if (collection.Entities != null && collection.Entities.Count == 1)
-                                {
-                                    ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = collection.Entities[0];
-                                    output = $"I found a {entityType} named {collection.Entities[0]["firstname"]} {collection.Entities[0]["lastname"]} from {collection.Entities[0]["address1_city"]} what would you like to do next? ";
-                                }
-                                else
-                                {
-                                    output = $"Hmmm...I couldn't find that {entityType}.";
+                                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                                    {
+                                        QueryExpression expression = new QueryExpression(entityType);
+                                        expression.ColumnSet = new ColumnSet(true);
+                                        Dictionary<string, string>.Enumerator iEnum = atts.GetEnumerator();
+                                        while (iEnum.MoveNext())
+                                        {
+                                            expression.Criteria.AddCondition(iEnum.Current.Key.ToLower(), ConditionOperator.Equal, iEnum.Current.Value);
+                                        }
+                                        EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
+                                        string entityDisplayName = entityType;
+                                        if (metadata.DisplayName != null && metadata.DisplayName.UserLocalizedLabel != null && !string.IsNullOrEmpty(metadata.DisplayName.UserLocalizedLabel.Label))
+                                        {
+                                            entityDisplayName = metadata.DisplayName.UserLocalizedLabel.Label;
+                                        }
+                                        if (collection.Entities != null && collection.Entities.Count == 1)
+                                        {
+                                            ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = collection.Entities[0];
+
+                                            output = $"I found a {entityDisplayName} named {collection.Entities[0][metadata.PrimaryNameAttribute]} what would you like to do next? You can say {string.Join(" or ", ActionPhrases)}";
+                                        }
+                                        else
+                                        {
+                                            output = $"Hmmm...I couldn't find that {entityDisplayName}.";
+                                        }
+                                    }
                                 }
                             }
                         }
-                        catch (FaultException<OrganizationServiceFault> ex)
+                        //entityType = result.entities
+                        // return our reply to the user
+                        if (!string.IsNullOrEmpty(output))
                         {
-                            return message.CreateReplyMessage(ex.Message);
-                            throw;
+                            return message.CreateReplyMessage(output);
                         }
-                    }
-                    //entityType = result.entities
-                    // return our reply to the user
-                    if (!string.IsNullOrEmpty(output))
-                    {
-                        return message.CreateReplyMessage(output);
                     }
                 }
+                return message.CreateReplyMessage("Sorry, I didn't understand that. I'm still learning. Hopefully my human trainers will help me understand that request next time.");
             }
-            return message.CreateReplyMessage("Sorry, I didn't understand that. I'm still learning. Hopefully my human trainers will help me understand that request next time.");
+            catch (Exception ex)
+            {
+                return message.CreateReplyMessage($"Kabloooey! Nice work you just fried my circuits. Well played human. Here's your prize: {ex.Message}");
+            }
         }
     }
 }

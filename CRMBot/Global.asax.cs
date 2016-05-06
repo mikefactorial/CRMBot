@@ -12,6 +12,7 @@ namespace CRMBot
         protected void Application_Start()
         {
             GlobalConfiguration.Configure(WebApiConfig.Register);
+            CrmHelper.RetrieveMetadata();
         }
     }
 }
