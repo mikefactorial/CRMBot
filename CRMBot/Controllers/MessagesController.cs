@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
-using Microsoft.Bot.Connector.Utilities;
 
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Client;
@@ -23,48 +22,80 @@ using Microsoft.Xrm.Sdk.Client;
 using System.ServiceModel.Description;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Messages;
+using Microsoft.Bot.Builder.Dialogs;
 
 namespace CRMBot
 {
     [BotAuthentication]
     public class MessagesController : ApiController
     {
-        private string[] AttachmentActionPhrases = new string[]
+        public async Task<Message> Post([FromBody]Message message)
         {
-            "\"Attach as subject 'Powerpoint Presentation'\"",
-            "\"Attach as subject 'Profile Pic'\""
-        };
-        private string[] ActionPhrases = new string[]
-        {
-            "\"How many tasks, emails etc.\"",
-            "\"Follow up July 12 2016\"",
-            "\"Follow up next Tuesday\"",
-            "Send me an image and say \"Attach as 'Profile Pic'\""
-        };
+            try
+            {
+                if (message.Type == "Message")
+                {
+                    /*
+                    if (message.Attachments != null && message.Attachments.Count > 0)
+                    {
+                        List<byte[]> attachments = new List<byte[]>();
+                        foreach (Attachment attach in message.Attachments)
+                        {
+                            if (!string.IsNullOrEmpty(attach.ContentUrl))
+                            {
+                                attachments.Add(new System.Net.WebClient().DownloadData(attach.ContentUrl));
+                            }
+                        }
+                        ChatState.RetrieveChatState(message.ConversationId).Attachments = attachments;
 
-        private string[] FindActionPhrases = new string[]
-        {
-            "Find contact Dave Grohl\"",
-            "Find lead Susan Anthony\"",
-            "Find opportunity Roger Waters\"" 
-        };
-        private string[] RejectionStrings = new string[]
-        {
-            "I'm sorry I can't do that. You must CLOSE ALL DEALS!",
-            "Nope",
-            "Nie",
-            "Not gonna happen",
-            "Uh-uh",
-            "Sorry",
-            "We're done here",
-            "Stop that!"
-        };
+                        if (string.IsNullOrEmpty(message.Text))
+                        {
+                            return message.CreateReplyMessage($"I got your file. What would you like to do with it? You can say {string.Join(" or ", AttachmentActionPhrases)}.");
+                        }
+                    }
+                    */
+                    if (message.Text.ToLower().Contains("thank"))
+                    {
+                        return message.CreateReplyMessage("You're welcome!");
+                    }
+                    else if (message.Text.ToLower().Contains("say"))
+                    {
+                        return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
+                    }
+                    else
+                    {
+                        return await Conversation.SendAsync(message, () => new Dialogs.CrmDialog(message.ConversationId));
+                    }
+                }
+                else
+                {
+                    return HandleSystemMessage(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                return message.CreateReplyMessage($"Kabloooey! Nice work you just fried my circuits. Well played human. Here's your prize: {ex.ToString()}");
+            }
+        }
 
-        private static int rejectIndex = -1;
+        private static Message HandleSystemMessage(Message message)
+        {
+            if (message.Type == "BotAddedToConversation")
+            {
+                return message.CreateReplyMessage($"Hello {message.From?.Name}! To get started say something like {string.Join(" or ", Dialogs.CrmDialog.WelcomePhrases)}.");
+            }
+            else if (message.Type == "BotRemovedFromConversation")
+            {
+                return message.CreateReplyMessage($"See ya {message.From?.Name}!");
+            }
+
+            return null;
+        }
         /// <summary>
         /// POST: api/Messages
         /// Receive a message from a user and reply to it
         /// </summary>
+        /*
         public Message Post([FromBody]Message message)
         {
             try
@@ -135,41 +166,6 @@ namespace CRMBot
                             }
                             return message.CreateReplyMessage(RejectionStrings[rejectIndex]);
 
-                        }
-                        else if (bestIntention == "Attach")
-                        {
-                            if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
-                            {
-                                Entity relatedEntity = ChatState.RetrieveChatState(message.ConversationId).SelectedEntity;
-                                LuisResults.Entity subjectEntity = result.RetrieveEntity(LuisResults.EntityTypeNames.AttributeValue);
-                                string subject = "Attachment";
-                                if (subjectEntity != null && !string.IsNullOrEmpty(subjectEntity.entity))
-                                {
-                                    subject = subjectEntity.entity;
-                                }
-                                int i = 1;
-                                foreach (byte[] attachment in ChatState.RetrieveChatState(message.ConversationId).Attachments)
-                                {
-                                    Entity annotation = new Entity("annotation");
-                                    annotation["objectid"] = new EntityReference() { Id = relatedEntity.Id, LogicalName = relatedEntity.LogicalName };
-                                    string encodedData = System.Convert.ToBase64String(attachment);
-
-                                    annotation["filename"] = subject + i;
-                                    annotation["subject"] = subject;
-                                    annotation["mimetype"] = "application /octet-stream";
-                                    annotation["documentbody"] = encodedData;
-
-                                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
-                                    {
-                                        serviceProxy.Create(annotation);
-                                        return message.CreateReplyMessage($"Okay. I've attached the file to {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]} as a note with the Subject '{annotation["subject"]}'");
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                return message.CreateReplyMessage($"There's nothing to attach the file to. Say {string.Join(" or ", FindActionPhrases)} to find a record to attach this to.");
-                            }
                         }
                         else if (bestIntention == "Send")
                         {
@@ -301,6 +297,6 @@ namespace CRMBot
             {
                 return message.CreateReplyMessage($"Kabloooey! Nice work you just fried my circuits. Well played human. Here's your prize: {ex.Message}");
             }
-        }
+        }*/
     }
 }
