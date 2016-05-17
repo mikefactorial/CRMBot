@@ -1,0 +1,80 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Layout.master.cs" Inherits="Zurb_Foundation_Ecommerce_Homepage1.Layout" %>
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <meta content="IE=11.0000" http-equiv="X-UA-Compatible" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Foundation | Welcome</title>
+
+    <link href="css/foundation.min.css" rel="stylesheet" />
+    <link href="images/favicon.ico" rel="icon" type="image/x-icon" />
+
+    <asp:ContentPlaceHolder ID="head" runat="server">
+    </asp:ContentPlaceHolder>
+</head>
+<body>
+    <form id="form1" runat="server">
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <ul class="menu">
+                    <li class="menu-text">Marketing Site</li>
+                    <li><a href="http://foundation.zurb.com/downloads/templates-sites/ecommerce.html#">One</a></li>
+                    <li><a href="http://foundation.zurb.com/downloads/templates-sites/ecommerce.html#">Two</a></li>
+                </ul>
+            </div>
+            <div class="top-bar-right">
+                <ul class="menu">
+                    <li><a href="http://foundation.zurb.com/downloads/templates-sites/ecommerce.html#">Three</a></li>
+                    <li><a href="http://foundation.zurb.com/downloads/templates-sites/ecommerce.html#">Four</a></li>
+                    <li><a href="http://foundation.zurb.com/downloads/templates-sites/ecommerce.html#">Five</a></li>
+                    <li><a href="http://foundation.zurb.com/downloads/templates-sites/ecommerce.html#">Six</a></li>
+                </ul>
+            </div>
+        </div>
+        <div>
+            <asp:ContentPlaceHolder ID="ContentPlaceHolder1" runat="server">
+            </asp:ContentPlaceHolder>
+        </div>
+
+            <div class="callout large secondary">
+        <div class="row">
+            <div class="large-4 columns">
+                <h5>Vivamus Hendrerit Arcu Sed Erat Molestie</h5>
+                <p>
+                    Curabitur vulputate, ligula lacinia scelerisque tempor, lacus lacus ornare 
+                    ante, ac egestas est urna sit amet arcu. Class aptent taciti sociosqu ad litora 
+                    torquent per conubia nostra, per inceptos himenaeos. Sed molestie augue 
+                    sit.
+                </p>
+            </div>
+            <div class="large-3 large-offset-2 columns">
+                <ul class="menu vertical">
+                    <li><a href="#">One</a></li>
+                    <li><a href="#">Two</a></li>
+                    <li><a href="#">Three</a></li>
+                    <li><a href="#">Four</a></li>
+                </ul>
+            </div>
+            <div class="large-3 columns">
+                <ul class="menu vertical">
+                    <li><a href="#">One</a></li>
+                    <li><a href="#">Two</a></li>
+                    <li><a href="#">Three</a></li>
+                    <li><a href="#">Four</a></li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+    </form>
+
+    <script src="javascript/jquery-2.1.4.min.js"></script>
+    <script src="javascript/foundation.js"></script>
+    <script>
+        $(document).foundation();
+    </script>
+</body>
+</html>
