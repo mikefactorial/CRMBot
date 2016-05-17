@@ -46,6 +46,7 @@ namespace CRMBot.Dialogs
 
         public static string defaultMessage = $"Sorry, I didn't understand that. {FormatPhrases(WelcomePhrases)}";
 
+        public static string waitMessage = "Got it...Give me a second while I ";
         public const int MAX_RECORDS_TO_SHOW = 10;
 
         private string conversationId = string.Empty;
@@ -84,20 +85,17 @@ namespace CRMBot.Dialogs
                 if (date != DateTime.MinValue)
                 {
                     await context.PostAsync($"Okay...I've created task to follow up with {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} on { date.ToLongDateString() }");
-                    context.Wait(MessageReceived);
                 }
                 else
                 {
                     await context.PostAsync($"Okay...I've created task to follow up with {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]}");
-                    context.Wait(MessageReceived);
                 }
             }
             else
             {
                 await context.PostAsync($"Hmmm...I'm not sure who to follow up with. Say for example {FormatPhrases(FindActionPhrases)}");
-                context.Wait(MessageReceived);
             }
-
+            context.Wait(MessageReceived);
         }
         [LuisIntent("Display")]
         public async Task Display(IDialogContext context, LuisResult result)
@@ -123,16 +121,26 @@ namespace CRMBot.Dialogs
                     this.SelectedEntity = null;
                     await context.PostAsync($"Okay. We're done with {primaryAtt}");
                 }
-                await context.PostAsync($"Okay. We're done with that");
-                context.Wait(MessageReceived);
+                else
+                {
+                    await context.PostAsync($"Okay. We're done with that");
+                }
             }
             else if (result.Query.ToLower().Contains("say goodbye"))
             {
                 this.Attachments = null;
                 this.SelectedEntity = null;
                 await context.PostAsync("I'll Be Back...");
-                context.Wait(MessageReceived);
             }
+            else
+            {
+                if (result.Query.ToLower().Contains("hello") || result.Query.ToLower().Contains("hi"))
+                {
+                    await context.PostAsync($"Hello.");
+                }
+                await context.PostAsync($"To get started say something like {string.Join(" or ", Dialogs.CrmDialog.WelcomePhrases)}.");
+            }
+            context.Wait(MessageReceived);
         }
         [LuisIntent("Open")]
         public async Task Open(IDialogContext context, LuisResult result)
@@ -161,43 +169,29 @@ namespace CRMBot.Dialogs
                 EntityRecommendation dateEntity = result.RetrieveEntity(EntityTypeNames.DateTime);
                 if (dateEntity != null)
                 {
-                   await CountRecords(context, result);
+                    await CountRecords(context, result);
                 }
                 else
                 {
                     string entityType = entityTypeEntity.Entity;
+                    EntityRecommendation accountName = result.RetrieveEntity(EntityTypeNames.CompanyName);
+                    EntityRecommendation firstName = result.RetrieveEntity(EntityTypeNames.FirstName);
+                    EntityRecommendation lastName = result.RetrieveEntity(EntityTypeNames.LastName);
+                    EntityRecommendation attributeName = result.RetrieveEntity(EntityTypeNames.AttributeName);
+                    EntityRecommendation attributeValue = result.RetrieveEntity(EntityTypeNames.AttributeValue);
+
                     EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(entityType);
-                    Dictionary<string, string> atts = new Dictionary<string, string>();
-                    Dictionary<string, double?> attScores = new Dictionary<string, double?>();
-                    foreach (var entity in result.Entities)
-                    {
-                        if (entity.Score > .5)
-                        {
-                            if (entity.Type != "EntityType")
-                            {
-                                string[] split = entity.Type.Split(':');
-                                if (!atts.ContainsKey(split[split.Length - 1]))
-                                {
-                                    attScores.Add(split[split.Length - 1], entity.Score);
-                                    atts.Add(split[split.Length - 1], entity.Entity);
-                                }
-                                else if (entity.Score > attScores[split[split.Length - 1]])
-                                {
-                                    atts[split[split.Length - 1]] = entity.Entity;
-                                }
-                            }
-                        }
-                    }
 
                     using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
                     {
                         QueryExpression expression = new QueryExpression(entityType);
                         expression.ColumnSet = new ColumnSet(true);
-                        Dictionary<string, string>.Enumerator iEnum = atts.GetEnumerator();
-                        while (iEnum.MoveNext())
-                        {
-                            expression.Criteria.AddCondition(iEnum.Current.Key.ToLower(), ConditionOperator.Equal, iEnum.Current.Value);
-                        }
+
+                        this.AddFilter(expression, metadata, firstName);
+                        this.AddFilter(expression, metadata, lastName);
+                        this.AddFilter(expression, metadata, accountName);
+                        this.AddFilter(expression, metadata, attributeName, attributeValue);
+
                         EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
                         string entityDisplayName = entityType;
                         if (metadata.DisplayName != null && metadata.DisplayName.UserLocalizedLabel != null && !string.IsNullOrEmpty(metadata.DisplayName.UserLocalizedLabel.Label))
@@ -305,12 +299,10 @@ namespace CRMBot.Dialogs
                         if (this.SelectedEntity != null)
                         {
                             await context.PostAsync($"I found {collection.Entities.Count} {displayName} for the {this.SelectedEntity.LogicalName} {this.SelectedEntity["firstname"]} {this.SelectedEntity["lastname"]} {whenString}\r\n{sb.ToString()}");
-                            context.Wait(MessageReceived);
                         }
                         else
                         {
                             await context.PostAsync($"I found {collection.Entities.Count} {displayName} {whenString} in CRM.\r\n{sb.ToString()}");
-                            context.Wait(MessageReceived);
                         }
                     }
                 }
@@ -318,8 +310,8 @@ namespace CRMBot.Dialogs
             else
             {
                 await context.PostAsync(defaultMessage);
-                context.Wait(MessageReceived);
             }
+            context.Wait(MessageReceived);
         }
         [LuisIntent("Attach")]
         public async Task Attach(IDialogContext context, LuisResult result)
@@ -366,6 +358,35 @@ namespace CRMBot.Dialogs
         {
             return string.Join(" or ", phrases);
         }
+
+        protected void AddFilter(QueryExpression expression, EntityMetadata entity, EntityRecommendation attribute)
+        {
+            if (attribute != null)
+            {
+                string att = CrmHelper.FindAttribute(entity, attribute.Type);
+                if (!string.IsNullOrEmpty(att))
+                {
+                    expression.Criteria.AddCondition(att, ConditionOperator.Equal, attribute.Entity);
+                }
+                else
+                {
+                    expression.Criteria.AddCondition(entity.PrimaryNameAttribute, ConditionOperator.Equal, attribute.Entity);
+                }
+            }
+        }
+
+        protected void AddFilter(QueryExpression expression, EntityMetadata entity, EntityRecommendation attributeName, EntityRecommendation attributeValue)
+        {
+            if (attributeName != null && attributeValue != null)
+            {
+                string att = CrmHelper.FindAttribute(entity, attributeName.Entity);
+                if (!string.IsNullOrEmpty(att))
+                {
+                    expression.Criteria.AddCondition(att, ConditionOperator.Equal, attributeValue.Entity.Replace(" . ", ".").Replace(" - ", "-").Replace(" @ ", "@"));
+                }
+            }
+        }
+
         protected EntityMetadata SelectedEntityMetadata
         {
             get

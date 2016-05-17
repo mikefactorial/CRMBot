@@ -13,6 +13,8 @@ namespace CRMBot
 {
     public class CrmHelper
     {
+        private const int MIN_TEXTLENGTHFORFIELDSEARCH = 5;
+        private const int MIN_TEXTLENGTHFORENTITYSEARCH = 5;
         private static EntityMetadata[] metadata = null;
         public static EntityMetadata[] RetrieveMetadata()
         {
@@ -28,6 +30,203 @@ namespace CRMBot
                 metadata = response.EntityMetadata;
             }
             return metadata;
+        }
+
+        public static string FindEntity(string text)
+        {
+            EntityMetadata[] metadata = RetrieveMetadata();
+            //Equals
+            string subText = text.ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            {
+                EntityMetadata entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
+                if (entity != null)
+                {
+                    return entity.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            {
+                EntityMetadata entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
+                if (entity != null)
+                {
+                    return entity.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            {
+                EntityMetadata entity = metadata.FirstOrDefault(e => e.LogicalName == subText);
+                if (entity != null)
+                {
+                    return entity.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            {
+                EntityMetadata entity = metadata.FirstOrDefault(e => e.LogicalName == subText);
+                if (entity != null)
+                {
+                    return entity.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+            //Contains
+            subText = text.ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            {
+                EntityMetadata entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
+                if (entity != null)
+                {
+                    return entity.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            {
+                EntityMetadata entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
+                if (entity != null)
+                {
+                    return entity.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            {
+                EntityMetadata entity = metadata.FirstOrDefault(e => e.LogicalName.Contains(subText));
+                if (entity != null)
+                {
+                    return entity.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            {
+                EntityMetadata entity = metadata.FirstOrDefault(e => e.LogicalName.Contains(subText));
+                if (entity != null)
+                {
+                    return entity.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+            return string.Empty;
+
+        }
+        public static string FindAttribute(EntityMetadata entity, string text)
+        {
+
+            //Equals
+            string subText = text.ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.LogicalName == subText);
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.LogicalName == subText);
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+            //Contains
+            subText = text.ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.LogicalName.Contains(subText));
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.LogicalName.Contains(subText));
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+
+            return string.Empty;
         }
 
         public static EntityMetadata RetrieveEntityMetadata(string entityLogicalName)

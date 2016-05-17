@@ -15,14 +15,15 @@ namespace CRMBot.Dialogs
 
         public static EntityTypeNames EntityType = new EntityTypeNames() { EntityTypeName = "EntityType", EntityThreashold = .1 };
         public static EntityTypeNames Action = new EntityTypeNames() { EntityTypeName = "Action", EntityThreashold = .1 };
-        public static EntityTypeNames CompanyName = new EntityTypeNames() { EntityTypeName = "CompanyName", EntityThreashold = .1 };
         public static EntityTypeNames AttributeName = new EntityTypeNames() { EntityTypeName = "AttributeName", EntityThreashold = .1 };
         public static EntityTypeNames AttributeValue = new EntityTypeNames() { EntityTypeName = "AttributeValue", EntityThreashold = .1 };
         public static EntityTypeNames EmailAddress = new EntityTypeNames() { EntityTypeName = "EmailAddress", EntityThreashold = .1 };
         public static EntityTypeNames DateTime = new EntityTypeNames() { EntityTypeName = "builtin.datetime.date", EntityThreashold = 0 };
 
-        public static EntityTypeNames FirstName = new EntityTypeNames() { EntityTypeName = "ContactName:FirstName", EntityThreashold = 0 };
-        public static EntityTypeNames LastName = new EntityTypeNames() { EntityTypeName = "ContactName:LastName", EntityThreashold = 0 };
+        public static EntityTypeNames CompanyName = new EntityTypeNames() { EntityTypeName = "CompanyName", EntityThreashold = .1 };
+
+        public static EntityTypeNames FirstName = new EntityTypeNames() { EntityTypeName = "ContactName::FirstName", EntityThreashold = 0 };
+        public static EntityTypeNames LastName = new EntityTypeNames() { EntityTypeName = "ContactName::LastName", EntityThreashold = 0 };
     }
 
     public static class LuisResultExtensions
@@ -39,22 +40,15 @@ namespace CRMBot.Dialogs
                     max = entity.Score;
                 }
             }
-            if (bestEntity != null && bestEntity.Type == EntityTypeNames.EntityType.EntityTypeName)
+            if (bestEntity != null)
             {
-                EntityMetadata entity = CrmHelper.RetrieveMetadata().FirstOrDefault(e => e.LogicalName.ToLower() == bestEntity.Entity.Replace(" ", "").ToLower());
-                if (entity == null)
+                if (bestEntity.Type == EntityTypeNames.EntityType.EntityTypeName)
                 {
-                    //Retrieve by display name
-                    entity = CrmHelper.RetrieveMetadata().FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == bestEntity.Entity.ToLower());
-                    if (entity == null)
-                    {
-                        //Retrieve by plural display name
-                        entity = CrmHelper.RetrieveMetadata().FirstOrDefault(e => e.DisplayCollectionName != null && e.DisplayCollectionName.UserLocalizedLabel != null && e.DisplayCollectionName.UserLocalizedLabel.Label.ToLower() == bestEntity.Entity.ToLower());
-                    }
+                    bestEntity.Entity = CrmHelper.FindEntity(bestEntity.Entity);
                 }
-                if (entity != null)
+                if (bestEntity.Type.Contains(":"))
                 {
-                    bestEntity.Entity = entity.LogicalName;
+                    bestEntity.Type = bestEntity.Type.Split(':')[bestEntity.Type.Split(':').Length - 1];
                 }
             }
             return bestEntity;
