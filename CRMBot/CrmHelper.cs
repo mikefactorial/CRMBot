@@ -13,8 +13,8 @@ namespace CRMBot
 {
     public class CrmHelper
     {
-        private const int MIN_TEXTLENGTHFORFIELDSEARCH = 5;
-        private const int MIN_TEXTLENGTHFORENTITYSEARCH = 5;
+        private const int MIN_TEXTLENGTHFORFIELDSEARCH = 4;
+        private const int MIN_TEXTLENGTHFORENTITYSEARCH = 4;
         private static EntityMetadata[] metadata = null;
         public static EntityMetadata[] RetrieveMetadata()
         {
@@ -37,7 +37,7 @@ namespace CRMBot
             EntityMetadata[] metadata = RetrieveMetadata();
             //Equals
             string subText = text.ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
             {
                 EntityMetadata entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
                 if (entity != null)
@@ -48,7 +48,7 @@ namespace CRMBot
             }
 
             subText = text.ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
             {
                 EntityMetadata entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
                 if (entity != null)
@@ -60,7 +60,7 @@ namespace CRMBot
 
 
             subText = text.Replace(" ", "").ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
             {
                 EntityMetadata entity = metadata.FirstOrDefault(e => e.LogicalName == subText);
                 if (entity != null)
@@ -71,7 +71,7 @@ namespace CRMBot
             }
 
             subText = text.Replace(" ", "").ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
             {
                 EntityMetadata entity = metadata.FirstOrDefault(e => e.LogicalName == subText);
                 if (entity != null)
@@ -83,7 +83,7 @@ namespace CRMBot
 
             //Contains
             subText = text.ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
             {
                 EntityMetadata entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
                 if (entity != null)
@@ -94,7 +94,7 @@ namespace CRMBot
             }
 
             subText = text.ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
             {
                 EntityMetadata entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
                 if (entity != null)
@@ -106,7 +106,7 @@ namespace CRMBot
 
 
             subText = text.Replace(" ", "").ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
             {
                 EntityMetadata entity = metadata.FirstOrDefault(e => e.LogicalName.Contains(subText));
                 if (entity != null)
@@ -117,7 +117,7 @@ namespace CRMBot
             }
 
             subText = text.Replace(" ", "").ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORENTITYSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
             {
                 EntityMetadata entity = metadata.FirstOrDefault(e => e.LogicalName.Contains(subText));
                 if (entity != null)
@@ -135,7 +135,7 @@ namespace CRMBot
 
             //Equals
             string subText = text.ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
             {
                 AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
                 if (att != null)
@@ -146,7 +146,7 @@ namespace CRMBot
             }
 
             subText = text.ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
             {
                 AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
                 if (att != null)
@@ -158,7 +158,7 @@ namespace CRMBot
 
 
             subText = text.Replace(" ", "").ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
             {
                 AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.LogicalName == subText);
                 if (att != null)
@@ -169,7 +169,7 @@ namespace CRMBot
             }
 
             subText = text.Replace(" ", "").ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
             {
                 AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.LogicalName == subText);
                 if (att != null)
@@ -181,7 +181,7 @@ namespace CRMBot
 
             //Contains
             subText = text.ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
             {
                 AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
                 if (att != null)
@@ -192,7 +192,7 @@ namespace CRMBot
             }
 
             subText = text.ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
             {
                 AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
                 if (att != null)
@@ -204,7 +204,7 @@ namespace CRMBot
 
 
             subText = text.Replace(" ", "").ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
             {
                 AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.LogicalName.Contains(subText));
                 if (att != null)
@@ -215,7 +215,7 @@ namespace CRMBot
             }
 
             subText = text.Replace(" ", "").ToLower();
-            while (subText.Length > MIN_TEXTLENGTHFORFIELDSEARCH)
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
             {
                 AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.LogicalName.Contains(subText));
                 if (att != null)

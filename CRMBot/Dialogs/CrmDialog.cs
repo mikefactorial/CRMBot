@@ -70,8 +70,8 @@ namespace CRMBot.Dialogs
 
                 if (dateEntity != null)
                 {
-                    DateTime[] dates = dateEntity.ParseDateTimes();
-                    if (dates != null && dates.Length > 0)
+                    List<DateTime> dates = dateEntity.ParseDateTimes();
+                    if (dates != null && dates.Count > 0)
                     {
                         entity["scheduledend"] = dates[0];
                         date = dates[0];
@@ -145,18 +145,75 @@ namespace CRMBot.Dialogs
         [LuisIntent("Open")]
         public async Task Open(IDialogContext context, LuisResult result)
         {
+            Entity previouslySelectedEntity = this.SelectedEntity;
+            this.FindEntity(result);
+            if (this.SelectedEntity == null)
+            {
+                this.SelectedEntity = previouslySelectedEntity;
+            }
+
+            if (this.SelectedEntity != null)
+            {
+                //TODO MODEBUG
+            }
+
             await context.PostAsync(defaultMessage);
             context.Wait(MessageReceived);
         }
         [LuisIntent("Update")]
         public async Task Update(IDialogContext context, LuisResult result)
         {
+            Entity previouslySelectedEntity = this.SelectedEntity;
+            this.FindEntity(result);
+            if (this.SelectedEntity == null)
+            {
+                this.SelectedEntity = previouslySelectedEntity;
+            }
+            if (this.SelectedEntity != null)
+            {
+                EntityRecommendation attributeName = result.RetrieveEntity(EntityTypeNames.AttributeName);
+                EntityRecommendation attributeValue = result.RetrieveEntity(EntityTypeNames.AttributeValue);
+                if (attributeName != null && attributeValue != null)
+                {
+                    try
+                    {
+                        //TODO MODEBUG handle attribute types.
+                        this.SelectedEntity[attributeName.Entity] = attributeValue.Entity;
+                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                        {
+                            serviceProxy.Update(this.SelectedEntity);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
+                }
+                else
+                {
+                }
+            }
             await context.PostAsync(defaultMessage);
             context.Wait(MessageReceived);
         }
         [LuisIntent("Create")]
         public async Task Create(IDialogContext context, LuisResult result)
         {
+            EntityRecommendation accountName = result.RetrieveEntity(EntityTypeNames.CompanyName);
+            EntityRecommendation firstName = result.RetrieveEntity(EntityTypeNames.FirstName);
+            EntityRecommendation lastName = result.RetrieveEntity(EntityTypeNames.LastName);
+            EntityRecommendation attributeName = result.RetrieveEntity(EntityTypeNames.AttributeName);
+            EntityRecommendation attributeValue = result.RetrieveEntity(EntityTypeNames.AttributeValue);
+
+            if (firstName != null || lastName != null)
+            {
+            }
+            else if (accountName != null)
+            {
+            }
+            else if (attributeName != null && attributeValue != null)
+            {
+            }
             await context.PostAsync(defaultMessage);
             context.Wait(MessageReceived);
         }
@@ -207,8 +264,8 @@ namespace CRMBot.Dialogs
                 EntityRecommendation dateEntity = result.RetrieveEntity(EntityTypeNames.DateTime);
                 if (dateEntity != null)
                 {
-                    DateTime[] dates = dateEntity.ParseDateTimes();
-                    if (dates != null && dates.Length > 0)
+                    List<DateTime> dates = dateEntity.ParseDateTimes();
+                    if (dates != null && dates.Count > 0)
                     {
                         string action = "created";
                         EntityRecommendation actionEntity = result.RetrieveEntity(EntityTypeNames.Action);
@@ -221,7 +278,7 @@ namespace CRMBot.Dialogs
                         {
                             string field = action.ToLower() + "on";
                             expression.Criteria.AddCondition(field, ConditionOperator.OnOrAfter, new object[] { dates[0] });
-                            if (dates.Length > 1)
+                            if (dates.Count > 1)
                             {
                                 expression.Criteria.AddCondition(field, ConditionOperator.OnOrBefore, new object[] { dates[1] });
                                 whenString = $"{action} between {dates[0].ToString("MM/dd/yyyy")} and {dates[1].ToString("MM/dd/yyyy")}";

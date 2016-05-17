@@ -32,9 +32,9 @@ namespace CRMBot.Dialogs
         {
             double? max = -1.00;
             EntityRecommendation bestEntity = null;
-            foreach (var entity in result.Entities.Where(e => e.Type == entityType.EntityTypeName && e.Score >= entityType.EntityThreashold))
+            foreach (var entity in result.Entities.Where(e => e.Type == entityType.EntityTypeName && (e.Score >= entityType.EntityThreashold) || (e.Score == null && entityType.EntityThreashold <= 0)))
             {
-                if (max < entity.Score)
+                if ((entity.Score != null && max < entity.Score) || (max <= 0 && entity.Score == null))
                 {
                     bestEntity = entity;
                     max = entity.Score;
@@ -54,28 +54,50 @@ namespace CRMBot.Dialogs
             return bestEntity;
         }
 
-        public static DateTime[] ParseDateTimes(this EntityRecommendation dateEntity)
+        public static List<DateTime> ParseDateTimes(this EntityRecommendation dateEntity)
         {
-            /*
-            if (dateEntity.Resolution != null && !string.IsNullOrEmpty(dateEntity.Resolution.date))
+            List<DateTime> dates = new List<DateTime>();
+            if (dateEntity.Resolution != null)
             {
-                DateTime singleDate;
-                if (DateTime.TryParse(this.resolution.date, out singleDate))
+                foreach (string dateTime in dateEntity.Resolution.Values)
                 {
-                    return new DateTime[] { singleDate };
-                }
-                else
-                {
-                    if (this.resolution.date.Contains("-W"))
+                    DateTime singleDate;
+                    if (DateTime.TryParse(dateTime, out singleDate))
                     {
-                        int year = Int32.Parse(this.resolution.date.Substring(0, 4));
-                        int index = this.resolution.date.IndexOf("-W") + 2;
-                        int week = Int32.Parse(this.resolution.date.Substring(index, this.resolution.date.Length - index));
-                        return new DateTime[] { FirstDateOfWeekISO8601(year, week, 0), FirstDateOfWeekISO8601(year, week, 7) };
+                        dates.Add(singleDate);
+                    }
+                    else
+                    {
+                        if (dateTime.Contains("-WXX"))
+                        {
+                            int dayOfWeek;
+                            if (Int32.TryParse(dateTime.Substring(dateTime.Length - 1, 1), out dayOfWeek))
+                            {
+                                dates.Add(GetNextWeekday(DateTime.Now, (DayOfWeek)dayOfWeek));
+                            }
+                        }
+                        else if (dateTime.Contains("-W"))
+                        {
+                            int year;
+                            int index = dateTime.IndexOf("-W") + 2;
+                            int week;
+                            if (Int32.TryParse(dateTime.Substring(0, 4), out year) && Int32.TryParse(dateTime.Substring(index, dateTime.Length - index), out week))
+                            {
+                                dates.Add(FirstDateOfWeekISO8601(year, week, 0));
+                                dates.Add(FirstDateOfWeekISO8601(year, week, 7));
+                            }
+                        }
                     }
                 }
-            }*/
-            return null;
+            }
+            return dates;
+        }
+
+        public static DateTime GetNextWeekday(DateTime start, DayOfWeek day)
+        {
+            // The (... + 7) % 7 ensures we end up with a value in the range [0, 6]
+            int daysToAdd = ((int)day - (int)start.DayOfWeek + 7) % 7;
+            return start.AddDays(daysToAdd);
         }
 
         public static DateTime FirstDateOfWeekISO8601(int year, int weekOfYear, int daysToAdd)
