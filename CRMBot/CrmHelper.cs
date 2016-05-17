@@ -39,7 +39,7 @@ namespace CRMBot
             string subText = text.ToLower();
             while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
             {
-                EntityMetadata entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
+                EntityMetadata entity = metadata.FirstOrDefault(e => (e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText) || (e.DisplayCollectionName != null && e.DisplayCollectionName.UserLocalizedLabel != null && e.DisplayCollectionName.UserLocalizedLabel.Label.ToLower() == subText));
                 if (entity != null)
                 {
                     return entity.LogicalName;
@@ -50,7 +50,7 @@ namespace CRMBot
             subText = text.ToLower();
             while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
             {
-                EntityMetadata entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
+                EntityMetadata entity = metadata.FirstOrDefault(e => (e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText) || (e.DisplayCollectionName != null && e.DisplayCollectionName.UserLocalizedLabel != null && e.DisplayCollectionName.UserLocalizedLabel.Label.ToLower() == subText));
                 if (entity != null)
                 {
                     return entity.LogicalName;
