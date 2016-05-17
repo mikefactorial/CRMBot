@@ -27,6 +27,8 @@ namespace CRMBot.Dialogs
         public static string[] WelcomePhrases = new string[]
         {
             "\"Find contact, lead etc. Sarah Connor.\"",
+            "\"Update lead John Connor set home phone = 234-234-2345.\"",
+            "\"Create new opportunity Sarah Connor.\"",
             "\"How many opportunities, leads etc. have been created today?\"",
         };
         public static string[] ActionPhrases = new string[]
