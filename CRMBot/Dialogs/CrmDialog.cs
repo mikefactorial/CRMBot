@@ -26,7 +26,7 @@ namespace CRMBot.Dialogs
         };
         public static string[] WelcomePhrases = new string[]
         {
-            "\"Find contact, lead etc. Susan Connor.\"",
+            "\"Find contact, lead etc. Sarah Connor.\"",
             "\"How many opportunities, leads etc. have been created today?\"",
         };
         public static string[] ActionPhrases = new string[]
@@ -39,9 +39,9 @@ namespace CRMBot.Dialogs
 
         public static string[] FindActionPhrases = new string[]
         {
-            "Find contact Dave Grohl.\"",
-            "Find lead Susan Connor.\"",
-            "Find opportunity Roger Waters.\""
+            "Find contact John Connor.\"",
+            "Find lead Sarah Connor.\"",
+            "Find opportunity Kyle Reese.\""
         };
 
         public static string defaultMessage = $"Sorry, I didn't understand that. {FormatPhrases(WelcomePhrases)}";
@@ -163,52 +163,16 @@ namespace CRMBot.Dialogs
         [LuisIntent("Locate")]
         public async Task Locate(IDialogContext context, LuisResult result)
         {
-            EntityRecommendation entityTypeEntity = result.RetrieveEntity(EntityTypeNames.EntityType);
-            if (entityTypeEntity != null)
+            string entityDisplayName = this.FindEntity(result);
+
+            if (this.SelectedEntity != null)
             {
-                EntityRecommendation dateEntity = result.RetrieveEntity(EntityTypeNames.DateTime);
-                if (dateEntity != null)
-                {
-                    await CountRecords(context, result);
-                }
-                else
-                {
-                    string entityType = entityTypeEntity.Entity;
-                    EntityRecommendation accountName = result.RetrieveEntity(EntityTypeNames.CompanyName);
-                    EntityRecommendation firstName = result.RetrieveEntity(EntityTypeNames.FirstName);
-                    EntityRecommendation lastName = result.RetrieveEntity(EntityTypeNames.LastName);
-                    EntityRecommendation attributeName = result.RetrieveEntity(EntityTypeNames.AttributeName);
-                    EntityRecommendation attributeValue = result.RetrieveEntity(EntityTypeNames.AttributeValue);
-
-                    EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(entityType);
-
-                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
-                    {
-                        QueryExpression expression = new QueryExpression(entityType);
-                        expression.ColumnSet = new ColumnSet(true);
-
-                        this.AddFilter(expression, metadata, firstName);
-                        this.AddFilter(expression, metadata, lastName);
-                        this.AddFilter(expression, metadata, accountName);
-                        this.AddFilter(expression, metadata, attributeName, attributeValue);
-
-                        EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
-                        string entityDisplayName = entityType;
-                        if (metadata.DisplayName != null && metadata.DisplayName.UserLocalizedLabel != null && !string.IsNullOrEmpty(metadata.DisplayName.UserLocalizedLabel.Label))
-                        {
-                            entityDisplayName = metadata.DisplayName.UserLocalizedLabel.Label;
-                        }
-                        if (collection.Entities != null && collection.Entities.Count == 1)
-                        {
-                            this.SelectedEntity = collection.Entities[0];
-                            await context.PostAsync($"I found a {entityDisplayName} named {collection.Entities[0][metadata.PrimaryNameAttribute]} what would you like to do next? You can say {string.Join(" or ", ActionPhrases)}");
-                        }
-                        else
-                        {
-                            await context.PostAsync($"Hmmm...I couldn't find that {entityDisplayName}.");
-                        }
-                    }
-                }
+                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
+                await context.PostAsync($"I found a {entityDisplayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]} what would you like to do next? You can say {string.Join(" or ", ActionPhrases)}");
+            }
+            else
+            {
+                await context.PostAsync($"Hmmm...I couldn't find that {entityDisplayName}.");
             }
             context.Wait(MessageReceived);
         }
@@ -359,6 +323,56 @@ namespace CRMBot.Dialogs
             return string.Join(" or ", phrases);
         }
 
+        protected string FindEntity(LuisResult result)
+        {
+            string entityDisplayName = string.Empty;
+            this.SelectedEntity = null;
+            EntityRecommendation entityTypeEntity = result.RetrieveEntity(EntityTypeNames.EntityType);
+            if (entityTypeEntity != null)
+            {
+                string entityType = entityTypeEntity.Entity;
+                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(entityType);
+
+                entityDisplayName = entityType;
+                if (metadata.DisplayName != null && metadata.DisplayName.UserLocalizedLabel != null && !string.IsNullOrEmpty(metadata.DisplayName.UserLocalizedLabel.Label))
+                {
+                    entityDisplayName = metadata.DisplayName.UserLocalizedLabel.Label;
+                }
+
+                EntityRecommendation dateEntity = result.RetrieveEntity(EntityTypeNames.DateTime);
+                if (dateEntity != null)
+                {
+                    //MODEBUG TODO await CountRecords(context, result);
+                }
+                else
+                {
+                    EntityRecommendation accountName = result.RetrieveEntity(EntityTypeNames.CompanyName);
+                    EntityRecommendation firstName = result.RetrieveEntity(EntityTypeNames.FirstName);
+                    EntityRecommendation lastName = result.RetrieveEntity(EntityTypeNames.LastName);
+                    EntityRecommendation attributeName = result.RetrieveEntity(EntityTypeNames.AttributeName);
+                    EntityRecommendation attributeValue = result.RetrieveEntity(EntityTypeNames.AttributeValue);
+
+
+                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                    {
+                        QueryExpression expression = new QueryExpression(entityType);
+                        expression.ColumnSet = new ColumnSet(true);
+
+                        this.AddFilter(expression, metadata, firstName);
+                        this.AddFilter(expression, metadata, lastName);
+                        this.AddFilter(expression, metadata, accountName);
+                        this.AddFilter(expression, metadata, attributeName, attributeValue);
+
+                        EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
+                        if (collection.Entities != null && collection.Entities.Count == 1)
+                        {
+                            this.SelectedEntity = collection.Entities[0];
+                        }
+                    }
+                }
+            }
+            return entityDisplayName;
+        }
         protected void AddFilter(QueryExpression expression, EntityMetadata entity, EntityRecommendation attribute)
         {
             if (attribute != null)
