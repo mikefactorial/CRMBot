@@ -54,7 +54,48 @@ namespace CRMBot
                         }
                     }
                     */
-                    if (message.Text.ToLower().Contains("thank"))
+                    if (message.Text.ToLower().StartsWith("crmbot-"))
+                    {
+                        QueryExpression query = new QueryExpression("cobalt_crmorganization");
+                        query.Criteria.AddCondition("cobalt_registrationcode", ConditionOperator.Equal, message.Text);
+                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                        {
+                            EntityCollection collection = serviceProxy.RetrieveMultiple(query);
+                            if (collection.Entities != null && collection.Entities.Count == 1)
+                            {
+                                if (message.From != null)
+                                {
+                                    if (message.From.ChannelId.ToLower() == "facebook" || message.From.ChannelId.ToLower() == "skype")
+                                    {
+                                        if (message.From.ChannelId.ToLower() == "facebook")
+                                        {
+                                            collection.Entities[0]["cobalt_facebookmessengerid"] = message.From.Id;
+                                        }
+                                        else if (message.From.ChannelId.ToLower() == "skype")
+                                        {
+                                            collection.Entities[0]["cobalt_skypeid"] = message.From.Id;
+                                        }
+                                        serviceProxy.Update(collection.Entities[0]);
+
+                                        SetStateRequest setState = new SetStateRequest();
+                                        setState.EntityMoniker = new EntityReference();
+                                        setState.EntityMoniker.Id = collection.Entities[0].Id;
+                                        setState.EntityMoniker.LogicalName = collection.Entities[0].LogicalName;
+                                        setState.State = new OptionSetValue(0);
+                                        setState.Status = new OptionSetValue(533470000);
+                                        serviceProxy.Execute(setState);
+                                    }
+                                    else
+                                    {
+                                        return message.CreateReplyMessage("Hmmm... Unfortunately, I can't use this app to communicate right now. You can try sending the registraiton code using either Facebook Messenger or Skype.");
+                                    }
+                                    return message.CreateReplyMessage("Got it! Your registration has been confirmed. Now go back to the registration portal to complete your setup.");
+                                }
+                            }
+                        }
+                        return message.CreateReplyMessage("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at cobalt.net/BotRegistration");
+                    }
+                    else if (message.Text.ToLower().Contains("thank"))
                     {
                         return message.CreateReplyMessage("You're welcome!");
                     }
