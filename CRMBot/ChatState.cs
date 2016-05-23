@@ -16,6 +16,7 @@ namespace CRMBot
         private static double chatCacheDurationMinutes = 30.0000;
 
         public static string Attachments = "Attachments";
+        public static string FilteredEntities = "FilteredEntities";
         public static string SelectedEntity = "SelectedEntity";
 
         public static ChatState RetrieveChatState(string chatId)

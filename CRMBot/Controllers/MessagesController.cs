@@ -35,7 +35,6 @@ namespace CRMBot
             {
                 if (message.Type == "Message")
                 {
-                    /*
                     if (message.Attachments != null && message.Attachments.Count > 0)
                     {
                         List<byte[]> attachments = new List<byte[]>();
@@ -46,14 +45,15 @@ namespace CRMBot
                                 attachments.Add(new System.Net.WebClient().DownloadData(attach.ContentUrl));
                             }
                         }
-                        ChatState.RetrieveChatState(message.ConversationId).Attachments = attachments;
+                        Dialogs.CrmDialog dialog = new Dialogs.CrmDialog(message.ConversationId);
+                        dialog.Attachments = attachments;
 
                         if (string.IsNullOrEmpty(message.Text))
                         {
-                            return message.CreateReplyMessage($"I got your file. What would you like to do with it? You can say {string.Join(" or ", AttachmentActionPhrases)}.");
+                            return message.CreateReplyMessage($"I got your file. What would you like to do with it? You can say {string.Join(" or ", Dialogs.CrmDialog.AttachmentActionPhrases)}.");
                         }
                     }
-                    */
+
                     if (message.Text.ToLower().StartsWith("crmbot-"))
                     {
                         QueryExpression query = new QueryExpression("cobalt_crmorganization");
@@ -95,14 +95,6 @@ namespace CRMBot
                         }
                         return message.CreateReplyMessage("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at cobalt.net/BotRegistration");
                     }
-                    else if (message.Text.ToLower().Contains("thank"))
-                    {
-                        return message.CreateReplyMessage("You're welcome!");
-                    }
-                    else if (message.Text.ToLower().Contains("say"))
-                    {
-                        return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
-                    }
                     else
                     {
                         return await Conversation.SendAsync(message, () => new Dialogs.CrmDialog(message.ConversationId));
@@ -143,23 +135,6 @@ namespace CRMBot
             {
                 if (message.Type == "Message")
                 {
-                    if (message.Attachments != null && message.Attachments.Count > 0)
-                    {
-                        List<byte[]> attachments = new List<byte[]>();
-                        foreach (Attachment attach in message.Attachments)
-                        {
-                            if (!string.IsNullOrEmpty(attach.ContentUrl))
-                            {
-                                attachments.Add(new System.Net.WebClient().DownloadData(attach.ContentUrl));
-                            }
-                        }
-                        ChatState.RetrieveChatState(message.ConversationId).Attachments = attachments;
-
-                        if (string.IsNullOrEmpty(message.Text))
-                        {
-                            return message.CreateReplyMessage($"I got your file. What would you like to do with it? You can say {string.Join(" or ", AttachmentActionPhrases)}.");
-                        }
-                    }
                     if (message.Text.ToLower().Contains("forget"))
                     {
                         ChatState.RetrieveChatState(message.ConversationId).Attachments = null;

@@ -46,7 +46,7 @@ namespace CRMBot.Dialogs
             "Find opportunity Kyle Reese.\""
         };
 
-        public static string defaultMessage = $"Sorry, I didn't understand that. {FormatPhrases(WelcomePhrases)}";
+        public static string defaultMessage = $"Sorry, I didn't understand that. Try saying {FormatPhrases(WelcomePhrases)}";
 
         public static string waitMessage = "Got it...Give me a second while I ";
         public const int MAX_RECORDS_TO_SHOW = 10;
@@ -114,31 +114,41 @@ namespace CRMBot.Dialogs
         [LuisIntent("None")]
         public async Task None(IDialogContext context, LuisResult result)
         {
-            if (result.Query.ToLower().Contains("forget"))
+            if (result.Query.ToLower().Contains("forget") || result.Query.ToLower().Contains("start over") || result.Query.ToLower().Contains("done"))
             {
                 this.Attachments = null;
+                this.FilteredEntities = null;
                 if (this.SelectedEntity != null && this.SelectedEntityMetadata != null)
                 {
                     string primaryAtt = this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute].ToString();
                     this.SelectedEntity = null;
-                    await context.PostAsync($"Okay. We're done with {primaryAtt}");
+                    await context.PostAsync($"Okay. We're done with {primaryAtt}.");
                 }
                 else
                 {
-                    await context.PostAsync($"Okay. We're done with that");
+                    await context.PostAsync($"Okay. We're done with that.");
                 }
             }
-            else if (result.Query.ToLower().Contains("say goodbye"))
+            else if (result.Query.ToLower().Contains("goodbye"))
             {
+                this.FilteredEntities = null;
                 this.Attachments = null;
                 this.SelectedEntity = null;
-                await context.PostAsync("I'll Be Back...");
+                await context.PostAsync("CRM you later...");
+            }
+            else if (result.Query.ToLower().Contains("thank"))
+            {
+                await context.PostAsync($"You're welcome!");
+            }
+            else if (result.Query.ToLower().StartsWith("say"))
+            {
+                await context.PostAsync(result.Query.Substring(result.Query.ToLower().IndexOf("say") + 4));
             }
             else
             {
                 if (result.Query.ToLower().Contains("hello") || result.Query.ToLower().Contains("hi"))
                 {
-                    await context.PostAsync($"Hello.");
+                    await context.PostAsync($"Hello!");
                 }
                 await context.PostAsync($"To get started say something like {string.Join(" or ", Dialogs.CrmDialog.WelcomePhrases)}.");
             }
@@ -373,6 +383,7 @@ namespace CRMBot.Dialogs
                         await context.PostAsync($"Okay. I've attached the file to {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} as a note with the Subject '{annotation["subject"]}'");
                     }
                 }
+                this.Attachments = null;
             }
 
             context.Wait(MessageReceived);
@@ -423,9 +434,17 @@ namespace CRMBot.Dialogs
                         this.AddFilter(expression, metadata, attributeName, attributeValue);
 
                         EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
-                        if (collection.Entities != null && collection.Entities.Count == 1)
+                        if (collection.Entities != null)
                         {
-                            this.SelectedEntity = collection.Entities[0];
+                            if (collection.Entities.Count == 1)
+                            {
+                                this.SelectedEntity = collection.Entities[0];
+                            }
+                            else if (collection.Entities.Count > 1)
+                            {
+                                this.FilteredEntities = collection.Entities.ToArray();
+                            }
+
                         }
                     }
                 }
@@ -468,6 +487,17 @@ namespace CRMBot.Dialogs
             }
         }
 
+        protected Entity[] FilteredEntities
+        {
+            get
+            {
+                return ChatState.RetrieveChatState(this.conversationId).Get(ChatState.FilteredEntities) as Entity[];
+            }
+            set
+            {
+                ChatState.RetrieveChatState(this.conversationId).Set(ChatState.FilteredEntities, value);
+            }
+        }
         protected Entity SelectedEntity
         {
             get
@@ -479,7 +509,7 @@ namespace CRMBot.Dialogs
                 ChatState.RetrieveChatState(this.conversationId).Set(ChatState.SelectedEntity, value);
             }
         }
-        private List<byte[]> Attachments
+        public List<byte[]> Attachments
         {
             get
             {
