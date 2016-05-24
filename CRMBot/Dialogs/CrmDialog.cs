@@ -187,22 +187,11 @@ namespace CRMBot.Dialogs
                 EntityRecommendation attributeValue = result.RetrieveEntity(EntityTypeNames.AttributeValue);
                 if (attributeName != null && attributeValue != null)
                 {
-                    try
+                    this.SelectedEntity[attributeName.Entity] = attributeValue.Entity;
+                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
                     {
-                        //TODO MODEBUG handle attribute types.
-                        this.SelectedEntity[attributeName.Entity] = attributeValue.Entity;
-                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
-                        {
-                            serviceProxy.Update(this.SelectedEntity);
-                        }
+                        serviceProxy.Update(this.SelectedEntity);
                     }
-                    catch (Exception ex)
-                    {
-
-                    }
-                }
-                else
-                {
                 }
             }
             await context.PostAsync(defaultMessage);
@@ -211,20 +200,43 @@ namespace CRMBot.Dialogs
         [LuisIntent("Create")]
         public async Task Create(IDialogContext context, LuisResult result)
         {
-            EntityRecommendation accountName = result.RetrieveEntity(EntityTypeNames.CompanyName);
-            EntityRecommendation firstName = result.RetrieveEntity(EntityTypeNames.FirstName);
-            EntityRecommendation lastName = result.RetrieveEntity(EntityTypeNames.LastName);
-            EntityRecommendation attributeName = result.RetrieveEntity(EntityTypeNames.AttributeName);
-            EntityRecommendation attributeValue = result.RetrieveEntity(EntityTypeNames.AttributeValue);
+            EntityRecommendation entityTypeEntity = result.RetrieveEntity(EntityTypeNames.EntityType);
+            if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
+            {
+                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
+                EntityRecommendation accountName = result.RetrieveEntity(EntityTypeNames.CompanyName);
+                EntityRecommendation firstName = result.RetrieveEntity(EntityTypeNames.FirstName);
+                EntityRecommendation lastName = result.RetrieveEntity(EntityTypeNames.LastName);
+                EntityRecommendation attributeName = result.RetrieveEntity(EntityTypeNames.AttributeName);
+                EntityRecommendation attributeValue = result.RetrieveEntity(EntityTypeNames.AttributeValue);
 
-            if (firstName != null || lastName != null)
-            {
-            }
-            else if (accountName != null)
-            {
-            }
-            else if (attributeName != null && attributeValue != null)
-            {
+                Entity entity = new Entity(entityTypeEntity.Entity);
+                if (attributeValue != null)
+                {
+                    if (attributeName != null)
+                    {
+                        SetValue(entity, attributeName.Entity, attributeValue);
+                    }
+                    else
+                    {
+                        SetValue(entity, metadata.PrimaryNameAttribute, attributeValue);
+                    }
+                }
+                else if (accountName != null)
+                {
+                    SetValue(entity, metadata.PrimaryNameAttribute, accountName);
+                }
+                else
+                {
+                    if (firstName != null)
+                    {
+                        SetValue(entity, "firstname", firstName);
+                    }
+                    if (lastName != null)
+                    {
+                        SetValue(entity, "lastname", lastName);
+                    }
+                }
             }
             await context.PostAsync(defaultMessage);
             context.Wait(MessageReceived);
@@ -450,6 +462,9 @@ namespace CRMBot.Dialogs
                 }
             }
             return entityDisplayName;
+        }
+        protected void SetValue(Entity entity, string attributeName, EntityRecommendation attributeValue)
+        {
         }
         protected void AddFilter(QueryExpression expression, EntityMetadata entity, EntityRecommendation attribute)
         {
