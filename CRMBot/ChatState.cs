@@ -7,6 +7,8 @@ using System.Web;
 using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.Bot.Connector;
 using System.Configuration;
+using Microsoft.Xrm.Sdk.Query;
+using Microsoft.Xrm.Sdk.Client;
 
 namespace CRMBot
 {
@@ -20,21 +22,55 @@ namespace CRMBot
         public static string FilteredEntities = "FilteredEntities";
         public static string SelectedEntity = "SelectedEntity";
 
+        public static bool SetChatState(Message message)
+        {
+            bool returnValue = false;
+            if (!MemoryCache.Default.Contains(message.ConversationId))
+            {
+                if (message.From != null)
+                {
+                    if (message.From.ChannelId.ToLower() == "facebook" || message.From.ChannelId.ToLower() == "skype")
+                    {
+                        QueryExpression query = new QueryExpression("cobalt_crmorganization");
+                        query.ColumnSet = new ColumnSet(new string[] { "cobalt_organizationurl", "cobalt_username", "cobalt_password" });
+                        if (message.From.ChannelId.ToLower() == "facebook")
+                        {
+                            query.Criteria.AddCondition("cobalt_facebookmessengerid", ConditionOperator.Equal, message.From.Id);
+                        }
+                        else if (message.From.ChannelId.ToLower() == "skype")
+                        {
+                            query.Criteria.AddCondition("cobalt_skypeid", ConditionOperator.Equal, message.From.Id);
+                        }
+
+                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(Guid.Empty.ToString()))
+                        {
+                            EntityCollection collection = serviceProxy.RetrieveMultiple(query);
+                            if (collection.Entities != null && collection.Entities.Count == 1)
+                            {
+                                CacheItemPolicy policy = new CacheItemPolicy();
+                                policy.Priority = CacheItemPriority.Default;
+                                policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
+
+                                ChatState state = new ChatState();
+                                state.OrganizationServiceUrl = (string)collection.Entities[0]["cobalt_organizationurl"];
+                                state.OrganizationServiceUrl += (!state.OrganizationServiceUrl.EndsWith("/")) ? "/XRMServices/2011/Organization.svc" : "XRMServices/2011/Organization.svc";
+                                state.UserName = (string)collection.Entities[0]["cobalt_username"];
+                                state.Password = (string)collection.Entities[0]["cobalt_password"];
+                                MemoryCache.Default.Add(message.ConversationId, state, policy);
+                                returnValue = true;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                returnValue = true;
+            }
+            return returnValue;
+        }
         public static ChatState RetrieveChatState(string conversationId)
         {
-            if (!MemoryCache.Default.Contains(conversationId))
-            {
-                CacheItemPolicy policy = new CacheItemPolicy();
-                policy.Priority = CacheItemPriority.Default;
-                policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
-
-                ChatState state = new ChatState();
-                //MODEBUG TODO Pull from cobaltlab
-                state.OrganizationServiceUrl = ConfigurationManager.AppSettings["OrganizationServiceUrl"];
-                state.UserName = ConfigurationManager.AppSettings["UserName"];
-                state.Password = ConfigurationManager.AppSettings["Password"];
-                MemoryCache.Default.Add(conversationId, state, policy);
-            }
             return MemoryCache.Default[conversationId] as ChatState;
         }
 

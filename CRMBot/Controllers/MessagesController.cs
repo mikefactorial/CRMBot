@@ -35,29 +35,12 @@ namespace CRMBot
             {
                 if (message.Type == "Message")
                 {
-                    if (message.Attachments != null && message.Attachments.Count > 0)
-                    {
-                        List<byte[]> attachments = new List<byte[]>();
-                        foreach (Attachment attach in message.Attachments)
-                        {
-                            if (!string.IsNullOrEmpty(attach.ContentUrl))
-                            {
-                                attachments.Add(new System.Net.WebClient().DownloadData(attach.ContentUrl));
-                            }
-                        }
-                        Dialogs.CrmDialog dialog = new Dialogs.CrmDialog(message.ConversationId);
-                        dialog.Attachments = attachments;
-
-                        if (string.IsNullOrEmpty(message.Text))
-                        {
-                            return message.CreateReplyMessage($"I got your file. What would you like to do with it? You can say {string.Join(" or ", Dialogs.CrmDialog.AttachmentActionPhrases)}.");
-                        }
-                    }
                     if (message.Text.ToLower().StartsWith("portalreg"))
                     {
                         string[] split = message.Text.Split('|');
                         if (split.Length > 1)
                         {
+                            //MODEBUG TODO
                             QueryExpression query = new QueryExpression("cobalt_crmorganization");
                             query.Criteria.AddCondition("cobalt_registrationcode", ConditionOperator.Equal, message.Text);
                             using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(split[1]))
@@ -75,7 +58,7 @@ namespace CRMBot
                     {
                         QueryExpression query = new QueryExpression("cobalt_crmorganization");
                         query.Criteria.AddCondition("cobalt_registrationcode", ConditionOperator.Equal, message.Text);
-                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(message.ConversationId))
+                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(Guid.Empty.ToString()))
                         {
                             EntityCollection collection = serviceProxy.RetrieveMultiple(query);
                             if (collection.Entities != null && collection.Entities.Count == 1)
@@ -99,6 +82,7 @@ namespace CRMBot
                                         SetStateRequest setState = new SetStateRequest();
                                         setState.EntityMoniker = new EntityReference();
                                         setState.EntityMoniker.Id = collection.Entities[0].Id;
+
                                         setState.EntityMoniker.LogicalName = collection.Entities[0].LogicalName;
                                         setState.State = new OptionSetValue(0);
                                         setState.Status = new OptionSetValue(533470000);
@@ -114,8 +98,31 @@ namespace CRMBot
                         }
                         return message.CreateReplyMessage("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at cobalt.net/BotRegistration");
                     }
+
+                    if (!ChatState.SetChatState(message))
+                    {
+                        return message.CreateReplyMessage($"Hey there. I'm CRM Bot. I don't believe we've met. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to tell me more about yourself and your CRM organization.");
+                    }
                     else
                     {
+                        if (message.Attachments != null && message.Attachments.Count > 0)
+                        {
+                            List<byte[]> attachments = new List<byte[]>();
+                            foreach (Attachment attach in message.Attachments)
+                            {
+                                if (!string.IsNullOrEmpty(attach.ContentUrl))
+                                {
+                                    attachments.Add(new System.Net.WebClient().DownloadData(attach.ContentUrl));
+                                }
+                            }
+                            Dialogs.CrmDialog dialog = new Dialogs.CrmDialog(message.ConversationId);
+                            dialog.Attachments = attachments;
+
+                            if (string.IsNullOrEmpty(message.Text))
+                            {
+                                return message.CreateReplyMessage($"I got your file. What would you like to do with it? You can say {string.Join(" or ", Dialogs.CrmDialog.AttachmentActionPhrases)}.");
+                            }
+                        }
                         return await Conversation.SendAsync(message, () => new Dialogs.CrmDialog(message.ConversationId));
                     }
                 }

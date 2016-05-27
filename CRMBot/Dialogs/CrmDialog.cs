@@ -332,7 +332,7 @@ namespace CRMBot.Dialogs
                         System.Text.StringBuilder sb = new System.Text.StringBuilder();
                         for (int i = 0; i < collection.Entities.Count && i < MAX_RECORDS_TO_SHOW; i++)
                         {
-                            sb.Append($"{i + 1}) ");
+                            sb.Append($"{i + 1}. ");
                             sb.Append(collection.Entities[i][entityMetadata.PrimaryNameAttribute]);
                             sb.Append("\r\n");
                             if (i == MAX_RECORDS_TO_SHOW - 1)

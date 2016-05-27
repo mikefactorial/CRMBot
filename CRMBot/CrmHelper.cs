@@ -235,13 +235,23 @@ namespace CRMBot
         }
         public static OrganizationServiceProxy CreateOrganizationService(string conversationId)
         {
-            ChatState state = ChatState.RetrieveChatState(conversationId);
-            Uri oUri = new Uri(state.OrganizationServiceUrl);
+            Uri oUri;
             ClientCredentials clientCredentials = new ClientCredentials();
-            clientCredentials.UserName.UserName = state.UserName;
-            clientCredentials.UserName.Password = state.Password;
+            if (conversationId != Guid.Empty.ToString())
+            {
+                ChatState state = ChatState.RetrieveChatState(conversationId);
+                oUri = new Uri(state.OrganizationServiceUrl);
+                clientCredentials.UserName.UserName = state.UserName;
+                clientCredentials.UserName.Password = state.Password;
+                clientCredentials.Windows.ClientCredential = new System.Net.NetworkCredential(ConfigurationManager.AppSettings["UserName"], ConfigurationManager.AppSettings["Password"]);
+            }
+            else
+            {
+                oUri = new Uri(ConfigurationManager.AppSettings["OrganizationServiceUrl"]);
+                clientCredentials.UserName.UserName = ConfigurationManager.AppSettings["UserName"];
+                clientCredentials.UserName.Password = ConfigurationManager.AppSettings["Password"];
+            }
             clientCredentials.Windows.ClientCredential = new System.Net.NetworkCredential(ConfigurationManager.AppSettings["UserName"], ConfigurationManager.AppSettings["Password"]);
-
             //Create your Organization Service Proxy  
             return new OrganizationServiceProxy(
                 oUri,
