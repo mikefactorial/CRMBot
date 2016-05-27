@@ -53,12 +53,29 @@ namespace CRMBot
                             return message.CreateReplyMessage($"I got your file. What would you like to do with it? You can say {string.Join(" or ", Dialogs.CrmDialog.AttachmentActionPhrases)}.");
                         }
                     }
-
-                    if (message.Text.ToLower().StartsWith("crmbot-"))
+                    if (message.Text.ToLower().StartsWith("portalreg"))
+                    {
+                        string[] split = message.Text.Split('|');
+                        if (split.Length > 1)
+                        {
+                            QueryExpression query = new QueryExpression("cobalt_crmorganization");
+                            query.Criteria.AddCondition("cobalt_registrationcode", ConditionOperator.Equal, message.Text);
+                            using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(split[1]))
+                            {
+                                EntityCollection collection = serviceProxy.RetrieveMultiple(query);
+                                if (collection.Entities != null && collection.Entities.Count == 1)
+                                {
+                                    return message.CreateReplyMessage("You're all set. Let us know if you have any questions.");
+                                }
+                            }
+                        }
+                        return message.CreateReplyMessage("Huh?");
+                    }
+                    else if (message.Text.ToLower().StartsWith("crmbot-"))
                     {
                         QueryExpression query = new QueryExpression("cobalt_crmorganization");
                         query.Criteria.AddCondition("cobalt_registrationcode", ConditionOperator.Equal, message.Text);
-                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(message.ConversationId))
                         {
                             EntityCollection collection = serviceProxy.RetrieveMultiple(query);
                             if (collection.Entities != null && collection.Entities.Count == 1)
@@ -70,10 +87,12 @@ namespace CRMBot
                                         if (message.From.ChannelId.ToLower() == "facebook")
                                         {
                                             collection.Entities[0]["cobalt_facebookmessengerid"] = message.From.Id;
+                                            collection.Entities[0]["cobalt_firstconversationid"] = message.ConversationId;
                                         }
                                         else if (message.From.ChannelId.ToLower() == "skype")
                                         {
                                             collection.Entities[0]["cobalt_skypeid"] = message.From.Id;
+                                            collection.Entities[0]["cobalt_firstconversationid"] = message.ConversationId;
                                         }
                                         serviceProxy.Update(collection.Entities[0]);
 

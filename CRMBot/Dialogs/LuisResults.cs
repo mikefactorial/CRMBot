@@ -28,7 +28,7 @@ namespace CRMBot.Dialogs
 
     public static class LuisResultExtensions
     {
-        public static EntityRecommendation RetrieveEntity(this LuisResult result, EntityTypeNames entityType)
+        public static EntityRecommendation RetrieveEntity(this LuisResult result, string conversationId, EntityTypeNames entityType)
         {
             double? max = -1.00;
             EntityRecommendation bestEntity = null;
@@ -44,7 +44,7 @@ namespace CRMBot.Dialogs
             {
                 if (bestEntity.Type == EntityTypeNames.EntityType.EntityTypeName)
                 {
-                    bestEntity.Entity = CrmHelper.FindEntity(bestEntity.Entity);
+                    bestEntity.Entity = CrmHelper.FindEntity(conversationId, bestEntity.Entity);
                 }
                 if (bestEntity.Type.Contains(":"))
                 {

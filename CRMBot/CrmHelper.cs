@@ -16,14 +16,14 @@ namespace CRMBot
         private const int MIN_TEXTLENGTHFORFIELDSEARCH = 4;
         private const int MIN_TEXTLENGTHFORENTITYSEARCH = 4;
         private static EntityMetadata[] metadata = null;
-        public static EntityMetadata[] RetrieveMetadata()
+        public static EntityMetadata[] RetrieveMetadata(string conversationId)
         {
             if (metadata == null)
             {
                 RetrieveAllEntitiesRequest request = new RetrieveAllEntitiesRequest();
                 request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.All;
                 RetrieveAllEntitiesResponse response;
-                using (OrganizationServiceProxy service = CreateOrganizationService())
+                using (OrganizationServiceProxy service = CreateOrganizationService(conversationId))
                 {
                     response = (RetrieveAllEntitiesResponse)service.Execute(request);
                 }
@@ -32,9 +32,9 @@ namespace CRMBot
             return metadata;
         }
 
-        public static string FindEntity(string text)
+        public static string FindEntity(string conversationId, string text)
         {
-            EntityMetadata[] metadata = RetrieveMetadata();
+            EntityMetadata[] metadata = RetrieveMetadata(conversationId);
             //Equals
             string subText = text.ToLower();
             while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
@@ -229,16 +229,17 @@ namespace CRMBot
             return string.Empty;
         }
 
-        public static EntityMetadata RetrieveEntityMetadata(string entityLogicalName)
+        public static EntityMetadata RetrieveEntityMetadata(string conversationId, string entityLogicalName)
         {
-            return RetrieveMetadata().FirstOrDefault(e => e.LogicalName == entityLogicalName);
+            return RetrieveMetadata(conversationId).FirstOrDefault(e => e.LogicalName == entityLogicalName);
         }
-        public static OrganizationServiceProxy CreateOrganizationService()
+        public static OrganizationServiceProxy CreateOrganizationService(string conversationId)
         {
-            Uri oUri = new Uri(ConfigurationManager.AppSettings["OrganizationServiceUrl"]);
+            ChatState state = ChatState.RetrieveChatState(conversationId);
+            Uri oUri = new Uri(state.OrganizationServiceUrl);
             ClientCredentials clientCredentials = new ClientCredentials();
-            clientCredentials.UserName.UserName = ConfigurationManager.AppSettings["UserName"];
-            clientCredentials.UserName.Password = ConfigurationManager.AppSettings["Password"];
+            clientCredentials.UserName.UserName = state.UserName;
+            clientCredentials.UserName.Password = state.Password;
             clientCredentials.Windows.ClientCredential = new System.Net.NetworkCredential(ConfigurationManager.AppSettings["UserName"], ConfigurationManager.AppSettings["Password"]);
 
             //Create your Organization Service Proxy  

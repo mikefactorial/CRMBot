@@ -68,7 +68,7 @@ namespace CRMBot.Dialogs
                 entity["regardingobjectid"] = new EntityReference(this.SelectedEntity.LogicalName, this.SelectedEntity.Id);
 
                 DateTime date = DateTime.MinValue;
-                EntityRecommendation dateEntity = result.RetrieveEntity(EntityTypeNames.DateTime);
+                EntityRecommendation dateEntity = result.RetrieveEntity(this.conversationId, EntityTypeNames.DateTime);
 
                 if (dateEntity != null)
                 {
@@ -80,7 +80,7 @@ namespace CRMBot.Dialogs
                     }
                 }
 
-                using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                 {
                     serviceProxy.Create(entity);
                 }
@@ -183,12 +183,12 @@ namespace CRMBot.Dialogs
             }
             if (this.SelectedEntity != null)
             {
-                EntityRecommendation attributeName = result.RetrieveEntity(EntityTypeNames.AttributeName);
-                EntityRecommendation attributeValue = result.RetrieveEntity(EntityTypeNames.AttributeValue);
+                EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
+                EntityRecommendation attributeValue = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeValue);
                 if (attributeName != null && attributeValue != null)
                 {
                     this.SelectedEntity[attributeName.Entity] = attributeValue.Entity;
-                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                     {
                         serviceProxy.Update(this.SelectedEntity);
                     }
@@ -200,15 +200,15 @@ namespace CRMBot.Dialogs
         [LuisIntent("Create")]
         public async Task Create(IDialogContext context, LuisResult result)
         {
-            EntityRecommendation entityTypeEntity = result.RetrieveEntity(EntityTypeNames.EntityType);
+            EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.conversationId, EntityTypeNames.EntityType);
             if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
             {
-                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
-                EntityRecommendation accountName = result.RetrieveEntity(EntityTypeNames.CompanyName);
-                EntityRecommendation firstName = result.RetrieveEntity(EntityTypeNames.FirstName);
-                EntityRecommendation lastName = result.RetrieveEntity(EntityTypeNames.LastName);
-                EntityRecommendation attributeName = result.RetrieveEntity(EntityTypeNames.AttributeName);
-                EntityRecommendation attributeValue = result.RetrieveEntity(EntityTypeNames.AttributeValue);
+                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
+                EntityRecommendation accountName = result.RetrieveEntity(this.conversationId, EntityTypeNames.CompanyName);
+                EntityRecommendation firstName = result.RetrieveEntity(this.conversationId, EntityTypeNames.FirstName);
+                EntityRecommendation lastName = result.RetrieveEntity(this.conversationId, EntityTypeNames.LastName);
+                EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
+                EntityRecommendation attributeValue = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeValue);
 
                 Entity entity = new Entity(entityTypeEntity.Entity);
                 if (attributeValue != null)
@@ -248,7 +248,7 @@ namespace CRMBot.Dialogs
 
             if (this.SelectedEntity != null)
             {
-                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
+                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
                 await context.PostAsync($"I found a {entityDisplayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]} what would you like to do next? You can say {string.Join(" or ", ActionPhrases)}");
             }
             else
@@ -263,10 +263,10 @@ namespace CRMBot.Dialogs
         {
             string parentEntity = string.Empty;
 
-            EntityRecommendation entityType = result.RetrieveEntity(EntityTypeNames.EntityType);
+            EntityRecommendation entityType = result.RetrieveEntity(this.conversationId, EntityTypeNames.EntityType);
             if (entityType != null && !string.IsNullOrEmpty(entityType.Entity))
             {
-                EntityMetadata entityMetadata = CrmHelper.RetrieveEntityMetadata(entityType.Entity);
+                EntityMetadata entityMetadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, entityType.Entity);
                 QueryExpression expression = new QueryExpression(entityType.Entity);
                 expression.ColumnSet = new ColumnSet(new string[] { entityMetadata.PrimaryNameAttribute, entityMetadata.PrimaryIdAttribute });
                 //TODO make this smarter based on relationship metadata
@@ -285,14 +285,14 @@ namespace CRMBot.Dialogs
 
                 string whenString = string.Empty;
 
-                EntityRecommendation dateEntity = result.RetrieveEntity(EntityTypeNames.DateTime);
+                EntityRecommendation dateEntity = result.RetrieveEntity(this.conversationId, EntityTypeNames.DateTime);
                 if (dateEntity != null)
                 {
                     List<DateTime> dates = dateEntity.ParseDateTimes();
                     if (dates != null && dates.Count > 0)
                     {
                         string action = "created";
-                        EntityRecommendation actionEntity = result.RetrieveEntity(EntityTypeNames.Action);
+                        EntityRecommendation actionEntity = result.RetrieveEntity(this.conversationId, EntityTypeNames.Action);
                         if (actionEntity != null)
                         {
                             action = actionEntity.Entity;
@@ -314,7 +314,7 @@ namespace CRMBot.Dialogs
                         }
                     }
                 }
-                using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                 {
                     EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
                     if (collection.Entities != null)
@@ -371,7 +371,7 @@ namespace CRMBot.Dialogs
             }
             else
             {
-                EntityRecommendation subjectEntity = result.RetrieveEntity(EntityTypeNames.AttributeValue);
+                EntityRecommendation subjectEntity = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeValue);
                 string subject = "Attachment";
                 if (subjectEntity != null)
                 {
@@ -389,7 +389,7 @@ namespace CRMBot.Dialogs
                     annotation["mimetype"] = "application /octet-stream";
                     annotation["documentbody"] = encodedData;
 
-                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                     {
                         serviceProxy.Create(annotation);
                         await context.PostAsync($"Okay. I've attached the file to {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} as a note with the Subject '{annotation["subject"]}'");
@@ -409,11 +409,11 @@ namespace CRMBot.Dialogs
         {
             string entityDisplayName = string.Empty;
             this.SelectedEntity = null;
-            EntityRecommendation entityTypeEntity = result.RetrieveEntity(EntityTypeNames.EntityType);
+            EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.conversationId, EntityTypeNames.EntityType);
             if (entityTypeEntity != null)
             {
                 string entityType = entityTypeEntity.Entity;
-                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(entityType);
+                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, entityType);
 
                 entityDisplayName = entityType;
                 if (metadata.DisplayName != null && metadata.DisplayName.UserLocalizedLabel != null && !string.IsNullOrEmpty(metadata.DisplayName.UserLocalizedLabel.Label))
@@ -421,21 +421,21 @@ namespace CRMBot.Dialogs
                     entityDisplayName = metadata.DisplayName.UserLocalizedLabel.Label;
                 }
 
-                EntityRecommendation dateEntity = result.RetrieveEntity(EntityTypeNames.DateTime);
+                EntityRecommendation dateEntity = result.RetrieveEntity(this.conversationId, EntityTypeNames.DateTime);
                 if (dateEntity != null)
                 {
                     //MODEBUG TODO await CountRecords(context, result);
                 }
                 else
                 {
-                    EntityRecommendation accountName = result.RetrieveEntity(EntityTypeNames.CompanyName);
-                    EntityRecommendation firstName = result.RetrieveEntity(EntityTypeNames.FirstName);
-                    EntityRecommendation lastName = result.RetrieveEntity(EntityTypeNames.LastName);
-                    EntityRecommendation attributeName = result.RetrieveEntity(EntityTypeNames.AttributeName);
-                    EntityRecommendation attributeValue = result.RetrieveEntity(EntityTypeNames.AttributeValue);
+                    EntityRecommendation accountName = result.RetrieveEntity(this.conversationId, EntityTypeNames.CompanyName);
+                    EntityRecommendation firstName = result.RetrieveEntity(this.conversationId, EntityTypeNames.FirstName);
+                    EntityRecommendation lastName = result.RetrieveEntity(this.conversationId, EntityTypeNames.LastName);
+                    EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
+                    EntityRecommendation attributeValue = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeValue);
 
 
-                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService())
+                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                     {
                         QueryExpression expression = new QueryExpression(entityType);
                         expression.ColumnSet = new ColumnSet(true);
@@ -498,7 +498,7 @@ namespace CRMBot.Dialogs
         {
             get
             {
-                return CrmHelper.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
+                return CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
             }
         }
 
