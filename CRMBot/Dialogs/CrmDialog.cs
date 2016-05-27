@@ -64,7 +64,7 @@ namespace CRMBot.Dialogs
             if (this.SelectedEntity != null)
             {
                 Entity entity = new Entity("task");
-                entity["subject"] = $"Follow up with {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]}";
+                string subject = $"Follow up with {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]}";
                 entity["regardingobjectid"] = new EntityReference(this.SelectedEntity.LogicalName, this.SelectedEntity.Id);
 
                 DateTime date = DateTime.MinValue;
@@ -80,6 +80,14 @@ namespace CRMBot.Dialogs
                     }
                 }
 
+                if (date != DateTime.MinValue)
+                {
+                    entity["subject"] = subject + " - " + date.ToShortDateString();
+                }
+                else
+                {
+                    entity["subject"] = subject;
+                }
                 using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                 {
                     serviceProxy.Create(entity);
