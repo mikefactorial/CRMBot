@@ -42,7 +42,11 @@ namespace CRMBot.Dialogs
             }
             if (bestEntity != null)
             {
-                if (bestEntity.Type == EntityTypeNames.EntityType.EntityTypeName)
+                if (bestEntity.Type == EntityTypeNames.AttributeValue.EntityTypeName)
+                {
+                    bestEntity.Entity = bestEntity.Entity.Replace(" '", string.Empty).Replace("' ", string.Empty);
+                }
+                else if (bestEntity.Type == EntityTypeNames.EntityType.EntityTypeName)
                 {
                     bestEntity.Entity = CrmHelper.FindEntity(conversationId, bestEntity.Entity);
                 }

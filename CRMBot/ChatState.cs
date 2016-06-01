@@ -25,7 +25,21 @@ namespace CRMBot
         public static bool SetChatState(Message message)
         {
             bool returnValue = false;
-            if (!MemoryCache.Default.Contains(message.ConversationId))
+            if (message.From.ChannelId == "emulator")
+            {
+                CacheItemPolicy policy = new CacheItemPolicy();
+                policy.Priority = CacheItemPriority.Default;
+                policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
+
+                ChatState state = new ChatState();
+                state.OrganizationServiceUrl = ConfigurationManager.AppSettings["OrganizationServiceUrl"];
+                state.UserName = ConfigurationManager.AppSettings["UserName"];
+                state.Password = ConfigurationManager.AppSettings["Password"];
+
+                MemoryCache.Default.Add(message.ConversationId, state, policy);
+                returnValue = true;
+            }
+            else if (!MemoryCache.Default.Contains(message.ConversationId))
             {
                 if (message.From != null)
                 {

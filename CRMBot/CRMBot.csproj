@@ -176,6 +176,7 @@
   <ItemGroup>
     <Content Include="packages.config" />
     <Content Include="CRMBotLuis.json" />
+    <Content Include="LuisApps\CRMBotLuisImportable.json" />
     <None Include="Properties\PublishProfiles\CRMBot.pubxml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
