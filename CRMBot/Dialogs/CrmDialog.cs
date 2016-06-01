@@ -212,7 +212,6 @@ namespace CRMBot.Dialogs
             if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
             {
                 EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
-                EntityRecommendation accountName = result.RetrieveEntity(this.conversationId, EntityTypeNames.CompanyName);
                 EntityRecommendation firstName = result.RetrieveEntity(this.conversationId, EntityTypeNames.FirstName);
                 EntityRecommendation lastName = result.RetrieveEntity(this.conversationId, EntityTypeNames.LastName);
                 EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
@@ -223,26 +222,22 @@ namespace CRMBot.Dialogs
                 {
                     if (attributeName != null)
                     {
-                        SetValue(entity, attributeName.Entity, attributeValue);
+                        SetValue(entity, metadata, attributeName.Entity, attributeValue);
                     }
                     else
                     {
-                        SetValue(entity, metadata.PrimaryNameAttribute, attributeValue);
+                        SetValue(entity, metadata, metadata.PrimaryNameAttribute, attributeValue);
                     }
-                }
-                else if (accountName != null)
-                {
-                    SetValue(entity, metadata.PrimaryNameAttribute, accountName);
                 }
                 else
                 {
                     if (firstName != null)
                     {
-                        SetValue(entity, "firstname", firstName);
+                        SetValue(entity, metadata, "firstname", firstName);
                     }
                     if (lastName != null)
                     {
-                        SetValue(entity, "lastname", lastName);
+                        SetValue(entity, metadata, "lastname", lastName);
                     }
                 }
             }
@@ -436,7 +431,6 @@ namespace CRMBot.Dialogs
                 }
                 else
                 {
-                    EntityRecommendation accountName = result.RetrieveEntity(this.conversationId, EntityTypeNames.CompanyName);
                     EntityRecommendation firstName = result.RetrieveEntity(this.conversationId, EntityTypeNames.FirstName);
                     EntityRecommendation lastName = result.RetrieveEntity(this.conversationId, EntityTypeNames.LastName);
                     EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
@@ -450,7 +444,6 @@ namespace CRMBot.Dialogs
 
                         this.AddFilter(expression, metadata, firstName);
                         this.AddFilter(expression, metadata, lastName);
-                        this.AddFilter(expression, metadata, accountName);
                         this.AddFilter(expression, metadata, attributeName, attributeValue);
 
                         EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
@@ -471,21 +464,33 @@ namespace CRMBot.Dialogs
             }
             return entityDisplayName;
         }
-        protected void SetValue(Entity entity, string attributeName, EntityRecommendation attributeValue)
+        protected void SetValue(Entity entity, EntityMetadata metadata, string attributeName, EntityRecommendation attributeValue)
         {
+            string att = CrmHelper.FindAttribute(metadata, attributeName);
+            //TODO MODEBUG Handle attribute types
+            if (!string.IsNullOrEmpty(att))
+            {
+                entity[att] = attributeValue.Entity;
+            }
+            else
+            {
+                //TODO HAndle combo name / first / last
+                entity[metadata.PrimaryNameAttribute] = attributeValue.Entity;
+            }
+
         }
-        protected void AddFilter(QueryExpression expression, EntityMetadata entity, EntityRecommendation attribute)
+        protected void AddFilter(QueryExpression expression, EntityMetadata metadata, EntityRecommendation attribute)
         {
             if (attribute != null)
             {
-                string att = CrmHelper.FindAttribute(entity, attribute.Type);
+                string att = CrmHelper.FindAttribute(metadata, attribute.Type);
                 if (!string.IsNullOrEmpty(att))
                 {
                     expression.Criteria.AddCondition(att, ConditionOperator.Equal, attribute.Entity);
                 }
                 else
                 {
-                    expression.Criteria.AddCondition(entity.PrimaryNameAttribute, ConditionOperator.Equal, attribute.Entity);
+                    expression.Criteria.AddCondition(metadata.PrimaryNameAttribute, ConditionOperator.Equal, attribute.Entity);
                 }
             }
         }
