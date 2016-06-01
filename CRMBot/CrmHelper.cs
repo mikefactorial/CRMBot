@@ -19,7 +19,6 @@ namespace CRMBot
     {
         private const int MIN_TEXTLENGTHFORFIELDSEARCH = 4;
         private const int MIN_TEXTLENGTHFORENTITYSEARCH = 4;
-        private static object metadataLoadLock = new object();
         private static Entity defaultSettings = null;
 
         public static string FindEntity(string conversationId, string text)
