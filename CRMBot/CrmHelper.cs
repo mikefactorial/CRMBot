@@ -2,11 +2,15 @@
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
+using Microsoft.Xrm.Sdk.Query;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.ServiceModel.Description;
+using System.Text;
 using System.Web;
 
 namespace CRMBot
@@ -15,26 +19,12 @@ namespace CRMBot
     {
         private const int MIN_TEXTLENGTHFORFIELDSEARCH = 4;
         private const int MIN_TEXTLENGTHFORENTITYSEARCH = 4;
-        private static EntityMetadata[] metadata = null;
-        public static EntityMetadata[] RetrieveMetadata(string conversationId)
-        {
-            if (metadata == null)
-            {
-                RetrieveAllEntitiesRequest request = new RetrieveAllEntitiesRequest();
-                request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.All;
-                RetrieveAllEntitiesResponse response;
-                using (OrganizationServiceProxy service = CreateOrganizationService(conversationId))
-                {
-                    response = (RetrieveAllEntitiesResponse)service.Execute(request);
-                }
-                metadata = response.EntityMetadata;
-            }
-            return metadata;
-        }
+        private static object metadataLoadLock = new object();
+        private static Entity defaultSettings = null;
 
         public static string FindEntity(string conversationId, string text)
         {
-            EntityMetadata[] metadata = RetrieveMetadata(conversationId);
+            EntityMetadata[] metadata = ChatState.RetrieveChatState(conversationId).Metadata;
             //Equals
             string subText = text.ToLower();
             while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
@@ -229,9 +219,36 @@ namespace CRMBot
             return string.Empty;
         }
 
+        public static Entity DefaultSettings
+        {
+            get
+            {
+                if (defaultSettings == null)
+                {
+                    QueryExpression query = new QueryExpression("cobalt_settings");
+                    query.ColumnSet = new ColumnSet(new string[] { "cobalt_settingsid", "cobalt_organizationdeskey" });
+                    query.PageInfo = new PagingInfo()
+                    {
+                        PageNumber = 1,
+                        Count = 1
+                    };
+
+                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(Guid.Empty.ToString()))
+                    {
+                        EntityCollection collection = serviceProxy.RetrieveMultiple(query);
+                        if (collection.Entities != null && collection.Entities.Count == 1)
+                        {
+                            defaultSettings = collection.Entities[0];
+                        }
+                    }
+                }
+
+                return defaultSettings;
+            }
+        }
         public static EntityMetadata RetrieveEntityMetadata(string conversationId, string entityLogicalName)
         {
-            return RetrieveMetadata(conversationId).FirstOrDefault(e => e.LogicalName == entityLogicalName);
+            return ChatState.RetrieveChatState(conversationId).Metadata.FirstOrDefault(e => e.LogicalName == entityLogicalName);
         }
         public static OrganizationServiceProxy CreateOrganizationService(string conversationId)
         {
