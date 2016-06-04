@@ -40,7 +40,6 @@ namespace CRMBot
                         string[] split = message.Text.Split('|');
                         if (split.Length > 1)
                         {
-                            //MODEBUG TODO
                             QueryExpression query = new QueryExpression("cobalt_crmorganization");
                             query.Criteria.AddCondition("cobalt_registrationcode", ConditionOperator.Equal, message.Text);
                             using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(split[1]))

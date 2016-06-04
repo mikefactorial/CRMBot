@@ -16,7 +16,7 @@ using System.Web;
 namespace CRMBot.Dialogs
 {
     //[LuisModel("cc421661-4803-4359-b19b-35a8bae3b466", "70c9f99320804782866c3eba387d54bf")]
-    [LuisModel("64c400cf-b36d-4874-bd01-1c7567e57d8a", "a03f8796d25a493dac9ff9e8ad2b15a6")]
+    [LuisModel("64c400cf-b36d-4874-bd01-1c7567e57d8a", "1d8d05db65364c67a7bf15a4bf855f03")]
     [Serializable]
     public class CrmDialog : LuisDialog<object>
     {
@@ -111,12 +111,45 @@ namespace CRMBot.Dialogs
         [LuisIntent("Display")]
         public async Task Display(IDialogContext context, LuisResult result)
         {
-            await context.PostAsync(defaultMessage);
+            Entity previouslySelectedEntity = this.SelectedEntity;
+            this.FindEntity(result, true);
+            if (this.SelectedEntity == null)
+            {
+                this.SelectedEntity = previouslySelectedEntity;
+            }
+            if (this.SelectedEntity != null)
+            {
+                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
+                EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
+                string displayName = RetrieveEntityDisplayName(metadata, false);
+                if (attributeName != null)
+                {
+                    string att = CrmHelper.FindAttribute(metadata, attributeName.Entity);
+
+                    if (this.SelectedEntity[att] != null)
+                    {
+                        await context.PostAsync($"{this.SelectedEntity[metadata.PrimaryNameAttribute]}'s {attributeName.Entity} is {this.SelectedEntity[att].ToString()}");
+                    }
+                    else
+                    {
+                        await context.PostAsync($"The {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} does not have a {attributeName.Entity}");
+                    }
+                }
+                else
+                {
+                    await context.PostAsync(defaultMessage);
+                }
+            }
+            else
+            {
+                await context.PostAsync(defaultMessage);
+            }
             context.Wait(MessageReceived);
         }
         [LuisIntent("Send")]
         public async Task Send(IDialogContext context, LuisResult result)
         {
+            //MODEBUG TODO
             await context.PostAsync(defaultMessage);
             context.Wait(MessageReceived);
         }
@@ -167,7 +200,7 @@ namespace CRMBot.Dialogs
         public async Task Open(IDialogContext context, LuisResult result)
         {
             Entity previouslySelectedEntity = this.SelectedEntity;
-            this.FindEntity(result);
+            this.FindEntity(result, false);
             if (this.SelectedEntity == null)
             {
                 this.SelectedEntity = previouslySelectedEntity;
@@ -175,35 +208,47 @@ namespace CRMBot.Dialogs
 
             if (this.SelectedEntity != null)
             {
-                //TODO MODEBUG
+                ChatState chatState = ChatState.RetrieveChatState(conversationId);
+                //Open in mobile client: ms-dynamicsxrm://?pagetype=view&etn=contact&id=899D4FCF-F4D3-E011-9D26-00155DBA3819
+                //Open in browser: http://myorg.crm.dynamics.com/main.aspx?etn=account&pagetype=entityrecord&id=%7B91330924-802A-4B0D-A900-34FD9D790829%7D
+                await context.PostAsync($"Got it. Click [here]({chatState.OrganizationUrl}/main.aspx?etn={this.SelectedEntity.LogicalName}&pagetype=entityrecord&id={this.SelectedEntity.Id.ToString()}) to open the record.");
             }
-
-            await context.PostAsync(defaultMessage);
+            else
+            {
+                await context.PostAsync(defaultMessage);
+            }
             context.Wait(MessageReceived);
         }
         [LuisIntent("Update")]
         public async Task Update(IDialogContext context, LuisResult result)
         {
             Entity previouslySelectedEntity = this.SelectedEntity;
-            this.FindEntity(result);
+            this.FindEntity(result, true);
             if (this.SelectedEntity == null)
             {
                 this.SelectedEntity = previouslySelectedEntity;
             }
             if (this.SelectedEntity != null)
             {
+                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
                 EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
                 EntityRecommendation attributeValue = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeValue);
                 if (attributeName != null && attributeValue != null)
                 {
-                    this.SelectedEntity[attributeName.Entity] = attributeValue.Entity;
+                    string att = CrmHelper.FindAttribute(metadata, attributeName.Entity);
+                    this.SelectedEntity[att] = attributeValue.Entity;
                     using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                     {
                         serviceProxy.Update(this.SelectedEntity);
                     }
                 }
+                string displayName = RetrieveEntityDisplayName(metadata, false);
+                await context.PostAsync($"I've update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record with the new {attributeName.Entity} {attributeValue.Entity}");
             }
-            await context.PostAsync(defaultMessage);
+            else
+            {
+                await context.PostAsync(defaultMessage);
+            }
             context.Wait(MessageReceived);
         }
         [LuisIntent("Create")]
@@ -212,7 +257,7 @@ namespace CRMBot.Dialogs
             EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.conversationId, EntityTypeNames.EntityType);
             if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
             {
-                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
+                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, entityTypeEntity.Entity);
                 EntityRecommendation firstName = result.RetrieveEntity(this.conversationId, EntityTypeNames.FirstName);
                 EntityRecommendation lastName = result.RetrieveEntity(this.conversationId, EntityTypeNames.LastName);
                 EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
@@ -223,7 +268,8 @@ namespace CRMBot.Dialogs
                 {
                     if (attributeName != null)
                     {
-                        SetValue(entity, metadata, attributeName.Entity, attributeValue);
+                        string att = CrmHelper.FindAttribute(metadata, attributeName.Entity);
+                        SetValue(entity, metadata, att, attributeValue);
                     }
                     else
                     {
@@ -241,14 +287,33 @@ namespace CRMBot.Dialogs
                         SetValue(entity, metadata, "lastname", lastName);
                     }
                 }
+
+                if (metadata.IsActivity.HasValue && metadata.IsActivity.Value && this.SelectedEntity != null)
+                {
+                    if (metadata.Attributes.Any(a => a.LogicalName == "customerid") && (this.SelectedEntity.LogicalName == "account" || this.SelectedEntity.LogicalName == "contact"))
+                    {
+                        entity["customerid"] = new EntityReference(this.SelectedEntity.LogicalName, this.SelectedEntity.Id);
+                    }
+                }
+                using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
+                {
+                    Guid id = serviceProxy.Create(entity);
+                    this.SelectedEntity = serviceProxy.Retrieve(entity.LogicalName, id, new ColumnSet(true));
+                }
+
+                string displayName = RetrieveEntityDisplayName(metadata, false);
+                await context.PostAsync($"I've created a new {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]}. If you want to set additional fields say something like 'Update {displayName} set home phone to 555-555-5555'");
             }
-            await context.PostAsync(defaultMessage);
+            else
+            {
+                await context.PostAsync(defaultMessage);
+            }
             context.Wait(MessageReceived);
         }
         [LuisIntent("Locate")]
         public async Task Locate(IDialogContext context, LuisResult result)
         {
-            string entityDisplayName = this.FindEntity(result);
+            string entityDisplayName = this.FindEntity(result, false);
 
             if (this.SelectedEntity != null)
             {
@@ -323,16 +388,7 @@ namespace CRMBot.Dialogs
                     EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
                     if (collection.Entities != null)
                     {
-                        string displayName = entityType.Entity;
-                        if (collection.Entities.Count == 1 && entityMetadata.DisplayName != null && entityMetadata.DisplayName.UserLocalizedLabel != null && !string.IsNullOrEmpty(entityMetadata.DisplayName.UserLocalizedLabel.Label))
-                        {
-                            displayName = entityMetadata.DisplayName.UserLocalizedLabel.Label;
-                        }
-                        else if (collection.Entities.Count != 1 && entityMetadata.DisplayCollectionName != null && entityMetadata.DisplayCollectionName.UserLocalizedLabel != null && !string.IsNullOrEmpty(entityMetadata.DisplayCollectionName.UserLocalizedLabel.Label))
-                        {
-                            displayName = entityMetadata.DisplayCollectionName.UserLocalizedLabel.Label;
-                        }
-
+                        string displayName = RetrieveEntityDisplayName(entityMetadata, collection.Entities.Count != 1);
                         System.Text.StringBuilder sb = new System.Text.StringBuilder();
                         for (int i = 0; i < collection.Entities.Count && i < MAX_RECORDS_TO_SHOW; i++)
                         {
@@ -409,7 +465,7 @@ namespace CRMBot.Dialogs
             return string.Join(" or ", phrases);
         }
 
-        protected string FindEntity(LuisResult result)
+        protected string FindEntity(LuisResult result, bool ignoreAttributeNameAndValue)
         {
             string entityDisplayName = string.Empty;
             this.SelectedEntity = null;
@@ -437,16 +493,17 @@ namespace CRMBot.Dialogs
                     EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
                     EntityRecommendation attributeValue = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeValue);
 
-
                     using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                     {
                         QueryExpression expression = new QueryExpression(entityType);
                         expression.ColumnSet = new ColumnSet(true);
-
                         this.AddFilter(expression, metadata, firstName);
                         this.AddFilter(expression, metadata, lastName);
-                        this.AddFilter(expression, metadata, attributeName, attributeValue);
 
+                        if (!ignoreAttributeNameAndValue)
+                        {
+                            this.AddFilter(expression, metadata, attributeName, attributeValue);
+                        }
                         EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
                         if (collection.Entities != null)
                         {
@@ -458,7 +515,6 @@ namespace CRMBot.Dialogs
                             {
                                 this.FilteredEntities = collection.Entities.ToArray();
                             }
-
                         }
                     }
                 }
@@ -467,18 +523,67 @@ namespace CRMBot.Dialogs
         }
         protected void SetValue(Entity entity, EntityMetadata metadata, string attributeName, EntityRecommendation attributeValue)
         {
-            string att = CrmHelper.FindAttribute(metadata, attributeName);
-            //TODO MODEBUG Handle attribute types
-            if (!string.IsNullOrEmpty(att))
+            if (attributeValue != null && !string.IsNullOrEmpty(attributeValue.Entity))
             {
-                entity[att] = attributeValue.Entity;
-            }
-            else
-            {
-                //TODO HAndle combo name / first / last
-                entity[metadata.PrimaryNameAttribute] = attributeValue.Entity;
-            }
+                string att = CrmHelper.FindAttribute(metadata, attributeName);
 
+                AttributeMetadata attMetadata = metadata.Attributes.FirstOrDefault(a => a.LogicalName == att);
+                if (string.IsNullOrEmpty(att))
+                {
+                    att = metadata.PrimaryNameAttribute;
+                }
+
+                if (!string.IsNullOrEmpty(att))
+                {
+                    object value = null;
+                    switch (attMetadata.AttributeType)
+                    {
+                        case AttributeTypeCode.Integer:
+                        case AttributeTypeCode.BigInt:
+                            value = Int32.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.Boolean:
+                            value = bool.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.DateTime:
+                            value = DateTime.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.Decimal:
+                        case AttributeTypeCode.Money:
+                            value = Decimal.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.Double:
+                            value = double.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.Uniqueidentifier:
+                            value = Guid.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.Picklist:
+                            value = new OptionSetValue()
+                            {
+                                Value = Int32.Parse(attributeValue.Entity)
+                            };
+                            break;
+                        default:
+                            value = attributeValue.Entity;
+                            break;
+                    }
+                    entity[att] = value;
+                }
+            }
+        }
+        protected string RetrieveEntityDisplayName(EntityMetadata entityMetadata, bool showPlural)
+        {
+            string displayName = (showPlural) ? entityMetadata.LogicalCollectionName : entityMetadata.LogicalName;
+            if (!showPlural && entityMetadata.DisplayName != null && entityMetadata.DisplayName.UserLocalizedLabel != null && !string.IsNullOrEmpty(entityMetadata.DisplayName.UserLocalizedLabel.Label))
+            {
+                displayName = entityMetadata.DisplayName.UserLocalizedLabel.Label;
+            }
+            else if (showPlural && entityMetadata.DisplayCollectionName != null && entityMetadata.DisplayCollectionName.UserLocalizedLabel != null && !string.IsNullOrEmpty(entityMetadata.DisplayCollectionName.UserLocalizedLabel.Label))
+            {
+                displayName = entityMetadata.DisplayCollectionName.UserLocalizedLabel.Label;
+            }
+            return displayName;
         }
         protected void AddFilter(QueryExpression expression, EntityMetadata metadata, EntityRecommendation attribute)
         {

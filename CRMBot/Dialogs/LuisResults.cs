@@ -39,9 +39,17 @@ namespace CRMBot.Dialogs
             }
             if (bestEntity != null)
             {
-                if (bestEntity.Type == EntityTypeNames.AttributeValue.EntityTypeName)
+                if (bestEntity.Type == EntityTypeNames.FirstName.EntityTypeName || bestEntity.Type == EntityTypeNames.LastName.EntityTypeName)
                 {
-                    bestEntity.Entity = bestEntity.Entity.Replace(" '", string.Empty).Replace("' ", string.Empty);
+                    bestEntity.Entity = bestEntity.Entity.Replace("'s", string.Empty);
+                }
+                else if (bestEntity.Type == EntityTypeNames.AttributeValue.EntityTypeName)
+                {
+                    if (bestEntity.Entity.Contains("@"))
+                    {
+                        bestEntity.Entity = bestEntity.Entity.Replace(" ", string.Empty);
+                    }
+                    bestEntity.Entity = bestEntity.Entity.Replace("'s", string.Empty).Replace(" '", string.Empty).Replace("' ", string.Empty);
                 }
                 else if (bestEntity.Type == EntityTypeNames.EntityType.EntityTypeName)
                 {

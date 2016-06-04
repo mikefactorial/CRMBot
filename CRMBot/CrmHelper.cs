@@ -303,15 +303,15 @@ namespace CRMBot
                 oUri = new Uri(state.OrganizationServiceUrl);
                 clientCredentials.UserName.UserName = state.UserName;
                 clientCredentials.UserName.Password = state.Password;
-                clientCredentials.Windows.ClientCredential = new System.Net.NetworkCredential(ConfigurationManager.AppSettings["UserName"], ConfigurationManager.AppSettings["Password"]);
+                clientCredentials.Windows.ClientCredential = new System.Net.NetworkCredential(state.UserName, state.Password);
             }
             else
             {
                 oUri = new Uri(ConfigurationManager.AppSettings["OrganizationServiceUrl"]);
                 clientCredentials.UserName.UserName = ConfigurationManager.AppSettings["UserName"];
                 clientCredentials.UserName.Password = ConfigurationManager.AppSettings["Password"];
+                clientCredentials.Windows.ClientCredential = new System.Net.NetworkCredential(ConfigurationManager.AppSettings["UserName"], ConfigurationManager.AppSettings["Password"]);
             }
-            clientCredentials.Windows.ClientCredential = new System.Net.NetworkCredential(ConfigurationManager.AppSettings["UserName"], ConfigurationManager.AppSettings["Password"]);
             //Create your Organization Service Proxy  
             return new OrganizationServiceProxy(
                 oUri,

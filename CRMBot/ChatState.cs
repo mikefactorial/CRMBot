@@ -36,7 +36,8 @@ namespace CRMBot
         public static bool SetChatState(Message message)
         {
             bool returnValue = false;
-            if (message.From.ChannelId == "emulator")
+            //MODEBUG TODO
+            if (message.From.ChannelId.ToString() != "facebook" && message.From.ChannelId.ToString() != "skype")
             {
                 CacheItemPolicy policy = new CacheItemPolicy();
                 policy.Priority = CacheItemPriority.Default;
@@ -57,7 +58,7 @@ namespace CRMBot
                     if (message.From.ChannelId.ToLower() == "facebook" || message.From.ChannelId.ToLower() == "skype")
                     {
                         QueryExpression query = new QueryExpression("cobalt_crmorganization");
-                        query.ColumnSet = new ColumnSet(new string[] { "cobalt_organizationurl", "cobalt_username", "cobalt_password" });
+                        query.ColumnSet = new ColumnSet(new string[] { "cobalt_organizationurl", "cobalt_username", "cobalt_encryptedpassword" });
                         if (message.From.ChannelId.ToLower() == "facebook")
                         {
                             query.Criteria.AddCondition("cobalt_facebookmessengerid", ConditionOperator.Equal, message.From.Id);
@@ -70,17 +71,18 @@ namespace CRMBot
                         using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(Guid.Empty.ToString()))
                         {
                             EntityCollection collection = serviceProxy.RetrieveMultiple(query);
-                            if (collection.Entities != null && collection.Entities.Count == 1)
+                            if (collection.Entities != null && collection.Entities.Count > 0 )
                             {
                                 CacheItemPolicy policy = new CacheItemPolicy();
                                 policy.Priority = CacheItemPriority.Default;
                                 policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
 
                                 ChatState state = new ChatState(message.ConversationId);
+                                state.OrganizationUrl = (string)collection.Entities[0]["cobalt_organizationurl"];
                                 state.OrganizationServiceUrl = (string)collection.Entities[0]["cobalt_organizationurl"];
                                 state.OrganizationServiceUrl += (!state.OrganizationServiceUrl.EndsWith("/")) ? "/XRMServices/2011/Organization.svc" : "XRMServices/2011/Organization.svc";
                                 state.UserName = (string)collection.Entities[0]["cobalt_username"];
-                                state.Password = Decrypt((string)collection.Entities[0]["cobalt_password"]);
+                                state.Password = Decrypt((string)collection.Entities[0]["cobalt_encryptedpassword"]);
                                 MemoryCache.Default.Add(message.ConversationId, state, policy);
                                 returnValue = true;
                             }
@@ -125,6 +127,10 @@ namespace CRMBot
             return cryptedString;
         }
 
+        public string OrganizationUrl
+        {
+            get; set;
+        }
         public string OrganizationServiceUrl
         {
             get; set;
