@@ -209,9 +209,11 @@ namespace CRMBot.Dialogs
             if (this.SelectedEntity != null)
             {
                 ChatState chatState = ChatState.RetrieveChatState(conversationId);
+                //[here](ms-dynamicsxrm://?pagetype=view&etn={this.SelectedEntity.LogicalName}&id={this.SelectedEntity.Id.ToString()}
                 //Open in mobile client: ms-dynamicsxrm://?pagetype=view&etn=contact&id=899D4FCF-F4D3-E011-9D26-00155DBA3819
                 //Open in browser: http://myorg.crm.dynamics.com/main.aspx?etn=account&pagetype=entityrecord&id=%7B91330924-802A-4B0D-A900-34FD9D790829%7D
-                await context.PostAsync($"Got it. Click [here]({chatState.OrganizationUrl}/main.aspx?etn={this.SelectedEntity.LogicalName}&pagetype=entityrecord&id={this.SelectedEntity.Id.ToString()}) to open the record.");
+                //await context.PostAsync($"Click [here]({chatState.OrganizationUrl}/main.aspx?etn={this.SelectedEntity.LogicalName}&pagetype=entityrecord&id={this.SelectedEntity.Id.ToString()}) to open the record in your browser or click [here](ms-dynamicsxrm://?pagetype=view&etn={this.SelectedEntity.LogicalName}&id={this.SelectedEntity.Id.ToString()}) to open the record in the mobile client.");
+                await context.PostAsync($"Click [here]({chatState.OrganizationUrl}/main.aspx?etn={this.SelectedEntity.LogicalName}&pagetype=entityrecord&id={this.SelectedEntity.Id.ToString()}) to open the record in your browser.");
             }
             else
             {
