@@ -37,6 +37,7 @@ namespace CRMBot
                 {
                     if (message.Text.ToLower().StartsWith("portalreg"))
                     {
+                        ChatState.ClearChatState(message.ConversationId);
                         string[] split = message.Text.Split('|');
                         if (split.Length > 1)
                         {
@@ -53,7 +54,7 @@ namespace CRMBot
                         }
                         return message.CreateReplyMessage("Huh?");
                     }
-                    else if (message.Text.ToLower().StartsWith("crmbot-"))
+                    else if (message.Text.ToLower().StartsWith("bot"))
                     {
                         QueryExpression query = new QueryExpression("cobalt_crmorganization");
                         query.Criteria.AddCondition("cobalt_registrationcode", ConditionOperator.Equal, message.Text);
@@ -91,7 +92,7 @@ namespace CRMBot
                                     {
                                         return message.CreateReplyMessage("Hmmm... Unfortunately, I can't use this app to communicate right now. You can try sending the registraiton code using either Facebook Messenger or Skype.");
                                     }
-                                    return message.CreateReplyMessage("Got it! Your registration has been confirmed. Now go back to the registration portal to complete your setup.");
+                                    return message.CreateReplyMessage("Got it! Your registration has been confirmed. Now go back to the registration portal to complete your setup. Once you're done say 'Help' to get started.");
                                 }
                             }
                         }

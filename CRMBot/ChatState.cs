@@ -58,6 +58,7 @@ namespace CRMBot
                     if (message.From.ChannelId.ToLower() == "facebook" || message.From.ChannelId.ToLower() == "skype")
                     {
                         QueryExpression query = new QueryExpression("cobalt_crmorganization");
+                        query.Criteria.AddCondition("statuscode", ConditionOperator.Equal, 533470000);
                         query.ColumnSet = new ColumnSet(new string[] { "cobalt_organizationurl", "cobalt_username", "cobalt_encryptedpassword" });
                         if (message.From.ChannelId.ToLower() == "facebook")
                         {
@@ -95,6 +96,9 @@ namespace CRMBot
                 returnValue = true;
             }
             return returnValue;
+        }
+        public static void ClearChatState(string conversationId)
+        {
         }
         public static ChatState RetrieveChatState(string conversationId)
         {

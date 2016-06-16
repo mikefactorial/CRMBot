@@ -36,8 +36,9 @@ namespace CRMBot.Dialogs
         {
             "\"How many tasks, emails etc.\"",
             "\"Follow up July 12 2016\"",
-            "\"Follow up next Tuesday\"",
-            "Send me an image and say \"Attach as 'Profile Pic'\""
+            "\"Show me the name, status, date created etc.\"",
+            "Send me an image and say \"Attach as 'Profile Pic'\"",
+            "\"Forget current record\"",
         };
 
         public static string[] FindActionPhrases = new string[]
@@ -62,6 +63,7 @@ namespace CRMBot.Dialogs
         [LuisIntent("FollowUp")]
         public async Task FollowUp(IDialogContext context, LuisResult result)
         {
+            this.FindEntity(result, true);
             if (this.SelectedEntity != null)
             {
                 Entity entity = new Entity("task");
@@ -111,28 +113,23 @@ namespace CRMBot.Dialogs
         [LuisIntent("Display")]
         public async Task Display(IDialogContext context, LuisResult result)
         {
-            Entity previouslySelectedEntity = this.SelectedEntity;
             this.FindEntity(result, true);
-            if (this.SelectedEntity == null)
-            {
-                this.SelectedEntity = previouslySelectedEntity;
-            }
             if (this.SelectedEntity != null)
             {
                 EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
-                EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
+                EntityRecommendation displayField = result.RetrieveEntity(this.conversationId, EntityTypeNames.DisplayField);
                 string displayName = RetrieveEntityDisplayName(metadata, false);
-                if (attributeName != null)
+                if (displayField != null)
                 {
-                    string att = CrmHelper.FindAttribute(metadata, attributeName.Entity);
+                    string att = CrmHelper.FindAttribute(metadata, displayField.Entity);
 
                     if (this.SelectedEntity[att] != null)
                     {
-                        await context.PostAsync($"{this.SelectedEntity[metadata.PrimaryNameAttribute]}'s {attributeName.Entity} is {this.SelectedEntity[att].ToString()}");
+                        await context.PostAsync($"{this.SelectedEntity[metadata.PrimaryNameAttribute]}'s {displayField.Entity} is {this.SelectedEntity[att].ToString()}");
                     }
                     else
                     {
-                        await context.PostAsync($"The {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} does not have a {attributeName.Entity}");
+                        await context.PostAsync($"The {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} does not have a {displayField.Entity}");
                     }
                 }
                 else
@@ -156,7 +153,20 @@ namespace CRMBot.Dialogs
         [LuisIntent("None")]
         public async Task None(IDialogContext context, LuisResult result)
         {
-            if (result.Query.ToLower().Contains("forget") || result.Query.ToLower().Contains("start over") || result.Query.ToLower().Contains("done"))
+            if (result.Query.ToLower().Contains("help"))
+            {
+                if (this.SelectedEntity == null)
+                {
+                    await context.PostAsync($"To get started say something like {string.Join(" or ", Dialogs.CrmDialog.WelcomePhrases)}.");
+                }
+                else
+                {
+                    EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
+                    string displayName = RetrieveEntityDisplayName(metadata, false);
+                    await context.PostAsync($"You've selected a {displayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]}? You can say {string.Join(" or ", ActionPhrases)}");
+                }
+            }
+            else if (result.Query.ToLower().Contains("forget") || result.Query.ToLower().Contains("start over") || result.Query.ToLower().Contains("done"))
             {
                 this.Attachments = null;
                 this.FilteredEntities = null;
@@ -199,12 +209,7 @@ namespace CRMBot.Dialogs
         [LuisIntent("Open")]
         public async Task Open(IDialogContext context, LuisResult result)
         {
-            Entity previouslySelectedEntity = this.SelectedEntity;
             this.FindEntity(result, false);
-            if (this.SelectedEntity == null)
-            {
-                this.SelectedEntity = previouslySelectedEntity;
-            }
 
             if (this.SelectedEntity != null)
             {
@@ -224,12 +229,7 @@ namespace CRMBot.Dialogs
         [LuisIntent("Update")]
         public async Task Update(IDialogContext context, LuisResult result)
         {
-            Entity previouslySelectedEntity = this.SelectedEntity;
             this.FindEntity(result, true);
-            if (this.SelectedEntity == null)
-            {
-                this.SelectedEntity = previouslySelectedEntity;
-            }
             if (this.SelectedEntity != null)
             {
                 EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
@@ -423,6 +423,7 @@ namespace CRMBot.Dialogs
         [LuisIntent("Attach")]
         public async Task Attach(IDialogContext context, LuisResult result)
         {
+            this.FindEntity(result, true);
             if (this.SelectedEntity == null)
             {
                 await context.PostAsync($"There's nothing to attach the file to. Say {FormatPhrases(FindActionPhrases)} to find a record to attach this to.");
@@ -469,6 +470,8 @@ namespace CRMBot.Dialogs
 
         protected string FindEntity(LuisResult result, bool ignoreAttributeNameAndValue)
         {
+            Entity previouslySelectedEntity = this.SelectedEntity;
+
             string entityDisplayName = string.Empty;
             this.SelectedEntity = null;
             EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.conversationId, EntityTypeNames.EntityType);
@@ -520,6 +523,10 @@ namespace CRMBot.Dialogs
                         }
                     }
                 }
+            }
+            if (this.SelectedEntity == null)
+            {
+                this.SelectedEntity = previouslySelectedEntity;
             }
             return entityDisplayName;
         }
