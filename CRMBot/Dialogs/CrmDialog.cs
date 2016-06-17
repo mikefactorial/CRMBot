@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -23,14 +24,28 @@ namespace CRMBot.Dialogs
         public static string[] AttachmentActionPhrases = new string[]
         {
             "\"Attach as subject 'Powerpoint Presentation'\"",
-            "\"Attach as subject 'Profile Pic'\""
+            "\"Attach as Note\""
         };
+        public static string[] HelpPhrases = new string[]
+        {
+            "\"Create lead Sarah Connor\"",
+            "\"Open lead Sarah Connor\"",
+            "\"How many leads were created today\"",
+            "\"Find lead Sarah Connor\"",
+            "\"Follow up with lead Sarah Connor next Tuesday\"",
+            "\"Update lead Sarah Connor set home phone to 234-234-2345\"",
+            "For more help go [here](http://www.cobalt.net/crmbot)."
+        };
+
         public static string[] WelcomePhrases = new string[]
         {
-            "\"Find contact, lead etc. Sarah Connor.\"",
-            "\"Update lead John Connor set home phone = 234-234-2345.\"",
-            "\"Create new opportunity Sarah Connor.\"",
-            "\"How many opportunities, leads etc. have been created today?\"",
+            "\"Create lead Sarah Connor\"",
+            "\"Open lead Sarah Connor\"",
+            "\"How many leads were created today\"",
+            "\"Find lead Sarah Connor\"",
+            "\"Follow up with lead Sarah Connor next Tuesday\"",
+            "\"Update lead Sarah Connor set home phone to 234-234-2345\"",
+            "For more help go [here](http://www.cobalt.net/crmbot)."
         };
         public static string[] ActionPhrases = new string[]
         {
@@ -43,12 +58,12 @@ namespace CRMBot.Dialogs
 
         public static string[] FindActionPhrases = new string[]
         {
-            "Find contact John Connor.\"",
-            "Find lead Sarah Connor.\"",
-            "Find opportunity Kyle Reese.\""
+            "\"Find contact John Connor.\"",
+            "\"Find lead Sarah Connor.\"",
+            "\"Find opportunity Kyle Reese.\""
         };
 
-        public static string defaultMessage = $"Sorry, I didn't understand that. Try saying {FormatPhrases(WelcomePhrases)}";
+        public static string defaultMessage = $"Sorry, I didn't understand that. Try saying {CrmDialog.BuildCommandList(CrmDialog.WelcomePhrases)}";
 
         public static string waitMessage = "Got it...Give me a second while I ";
         public const int MAX_RECORDS_TO_SHOW = 10;
@@ -157,13 +172,13 @@ namespace CRMBot.Dialogs
             {
                 if (this.SelectedEntity == null)
                 {
-                    await context.PostAsync($"To get started say something like {string.Join(" or ", Dialogs.CrmDialog.WelcomePhrases)}.");
+                    await context.PostAsync($"Here are some commands you can try... {CrmDialog.BuildCommandList(CrmDialog.HelpPhrases)}.");
                 }
                 else
                 {
                     EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
                     string displayName = RetrieveEntityDisplayName(metadata, false);
-                    await context.PostAsync($"You've selected a {displayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]}? You can say {string.Join(" or ", ActionPhrases)}");
+                    await context.PostAsync($"You've selected a {displayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]}? Now say {BuildCommandList(ActionPhrases)}");
                 }
             }
             else if (result.Query.ToLower().Contains("forget") || result.Query.ToLower().Contains("start over") || result.Query.ToLower().Contains("done"))
@@ -202,7 +217,7 @@ namespace CRMBot.Dialogs
                 {
                     await context.PostAsync($"Hello!");
                 }
-                await context.PostAsync($"To get started say something like {string.Join(" or ", Dialogs.CrmDialog.WelcomePhrases)}.");
+                await context.PostAsync($"To get started say something like {CrmDialog.BuildCommandList(CrmDialog.WelcomePhrases)}.");
             }
             context.Wait(MessageReceived);
         }
@@ -529,6 +544,20 @@ namespace CRMBot.Dialogs
                 this.SelectedEntity = previouslySelectedEntity;
             }
             return entityDisplayName;
+        }
+
+        public static string BuildCommandList(string[] phrases)
+        {
+            StringBuilder sb = new StringBuilder();
+            for(int i = 0; i < phrases.Length; i++)
+            {
+                sb.Append("\r\n");
+                sb.Append(i + 1);
+                sb.Append(". ");
+                sb.Append(phrases[i]);
+            }
+
+            return sb.ToString();
         }
         protected void SetValue(Entity entity, EntityMetadata metadata, string attributeName, EntityRecommendation attributeValue)
         {

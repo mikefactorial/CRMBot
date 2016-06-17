@@ -101,7 +101,26 @@ namespace CRMBot
 
                     if (!ChatState.SetChatState(message))
                     {
-                        return message.CreateReplyMessage($"Hey there. I'm CRM Bot. I don't believe we've met. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to tell me more about yourself and your CRM organization.");
+                        if (message.Text.ToLower().Contains("help"))
+                        {
+                            return message.CreateReplyMessage($"Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization.");
+                        }
+                        else if (message.Text.ToLower().Contains("goodbye"))
+                        {
+                            return message.CreateReplyMessage("CRM you later...");
+                        }
+                        else if (message.Text.ToLower().Contains("thank"))
+                        {
+                            return message.CreateReplyMessage($"You're welcome!");
+                        }
+                        else if (message.Text.ToLower().StartsWith("say"))
+                        {
+                            return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
+                        }
+                        else
+                        {
+                            return message.CreateReplyMessage($"Hey there. I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization.");
+                        }
                     }
                     else
                     {
@@ -133,7 +152,7 @@ namespace CRMBot
             }
             catch (Exception ex)
             {
-                return message.CreateReplyMessage($"Kabloooey! Nice work you just fried my circuits. Well played human. Here's your prize: {ex.ToString()}");
+                return message.CreateReplyMessage($"Kabloooey! Well played human you just fried my circuits. Here's your prize: {ex.Message}");
             }
         }
 
@@ -141,7 +160,7 @@ namespace CRMBot
         {
             if (message.Type == "BotAddedToConversation")
             {
-                return message.CreateReplyMessage($"Hello {message.From?.Name}! To get started say something like {string.Join(" or ", Dialogs.CrmDialog.WelcomePhrases)}.");
+                return message.CreateReplyMessage($"Hello {message.From?.Name}! To get started say something like {Dialogs.CrmDialog.BuildCommandList(CRMBot.Dialogs.CrmDialog.WelcomePhrases)}.");
             }
             else if (message.Type == "BotRemovedFromConversation")
             {
