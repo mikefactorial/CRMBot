@@ -178,6 +178,7 @@
     <Content Include="CRMBotLuis.json" />
     <Content Include="LuisApps\CRMBotLuisImportable.json" />
     <Content Include="LuisApps\CRMBot_6_3_2016.json" />
+    <Content Include="LuisApps\CRMBot_6_16_2016.json" />
     <None Include="Properties\PublishProfiles\CRMBot.pubxml" />
     <None Include="Properties\PublishProfiles\TempBot - FTP.pubxml" />
     <None Include="Properties\PublishProfiles\TempBot - Web Deploy.pubxml" />
