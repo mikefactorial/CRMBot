@@ -29,22 +29,22 @@ namespace CRMBot.Dialogs
         public static string[] HelpPhrases = new string[]
         {
             "\"Create lead Sarah Connor\"",
-            "\"Open lead Sarah Connor\"",
-            "\"How many leads were created today\"",
-            "\"Find lead Sarah Connor\"",
-            "\"Follow up with lead Sarah Connor next Tuesday\"",
             "\"Update lead Sarah Connor set home phone to 234-234-2345\"",
+            "\"How many leads were created this week\"",
+            "\"Find lead Sarah Connor\"",
+            "\"Open lead Sarah Connor\"",
+            "\"Follow up with lead Sarah Connor next Tuesday\"",
             "For more help go [here](http://www.cobalt.net/crmbot)."
         };
 
         public static string[] WelcomePhrases = new string[]
         {
             "\"Create lead Sarah Connor\"",
-            "\"Open lead Sarah Connor\"",
-            "\"How many leads were created today\"",
-            "\"Find lead Sarah Connor\"",
-            "\"Follow up with lead Sarah Connor next Tuesday\"",
             "\"Update lead Sarah Connor set home phone to 234-234-2345\"",
+            "\"How many leads were created this week\"",
+            "\"Find lead Sarah Connor\"",
+            "\"Open lead Sarah Connor\"",
+            "\"Follow up with lead Sarah Connor next Tuesday\"",
             "For more help go [here](http://www.cobalt.net/crmbot)."
         };
         public static string[] ActionPhrases = new string[]
