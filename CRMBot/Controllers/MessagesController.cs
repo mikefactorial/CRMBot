@@ -152,7 +152,7 @@ namespace CRMBot
             }
             catch (Exception ex)
             {
-                return message.CreateReplyMessage($"Kabloooey! Well played human you just fried my circuits. Here's your prize: {ex.Message}");
+                return message.CreateReplyMessage($"Kabloooey! Well played human you just fried my circuits. Thanks for being patient, I'm still learning to do some things while in preview. Hopefully, I'll get this worked out soon. Here's your prize: {ex.Message}");
             }
         }
 
