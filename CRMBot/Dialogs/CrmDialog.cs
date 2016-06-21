@@ -136,11 +136,11 @@ namespace CRMBot.Dialogs
                 string displayName = RetrieveEntityDisplayName(metadata, false);
                 if (displayField != null)
                 {
-                    string att = CrmHelper.FindAttribute(metadata, displayField.Entity);
-
-                    if (this.SelectedEntity[att] != null)
+                    string att = CrmHelper.FindAttributeLogicalName(metadata, displayField.Entity);
+                    string displayValue = GetAttributeDisplayValue(att);
+                    if (!string.IsNullOrEmpty(displayValue))
                     {
-                        await context.PostAsync($"{this.SelectedEntity[metadata.PrimaryNameAttribute]}'s {displayField.Entity} is {this.SelectedEntity[att].ToString()}");
+                        await context.PostAsync($"{this.SelectedEntity[metadata.PrimaryNameAttribute]}'s {displayField.Entity} is {displayValue}");
                     }
                     else
                     {
@@ -154,6 +154,9 @@ namespace CRMBot.Dialogs
             }
             else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
             {
+                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.FilteredEntities[0].LogicalName);
+                string displayName = RetrieveEntityDisplayName(metadata, true);
+                await context.PostAsync($"These are the currently selected {displayName} {this.BuildFilteredEntitiesList()}");
             }
             else
             {
@@ -179,7 +182,19 @@ namespace CRMBot.Dialogs
                 bool gotIndex = true;
                 if (ordinal != null)
                 {
-                    gotIndex = Int32.TryParse(ordinal.Entity.Substring(0, ordinal.Entity.Length - 2), out selection); 
+                    string number = string.Empty;
+                    foreach (char c in ordinal.Entity)
+                    {
+                        if (c >= 48 || c <= 57)
+                        {
+                            number += c;
+                        }
+                    }
+                    gotIndex = Int32.TryParse(number, out selection);
+                }
+                else
+                {
+                    gotIndex = Int32.TryParse(result.Query, out selection);
                 }
                 if (gotIndex && this.FilteredEntities != null && this.FilteredEntities.Length >= selection && selection >= 1)
                 {
@@ -220,7 +235,6 @@ namespace CRMBot.Dialogs
             else if (result.Query.ToLower().Contains("forget") || result.Query.ToLower().Contains("start over") || result.Query.ToLower().Contains("done"))
             {
                 this.Attachments = null;
-                this.FilteredEntities = null;
                 if (this.SelectedEntity != null && this.SelectedEntityMetadata != null)
                 {
                     string primaryAtt = this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute].ToString();
@@ -290,17 +304,28 @@ namespace CRMBot.Dialogs
                 EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
                 EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
                 EntityRecommendation attributeValue = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeValue);
+                string displayName = RetrieveEntityDisplayName(metadata, false);
                 if (attributeName != null && attributeValue != null)
                 {
-                    string att = CrmHelper.FindAttribute(metadata, attributeName.Entity);
-                    this.SelectedEntity[att] = attributeValue.Entity;
-                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
+                    string att = CrmHelper.FindAttributeLogicalName(metadata, attributeName.Entity);
+                    if (!string.IsNullOrEmpty(att))
                     {
-                        serviceProxy.Update(this.SelectedEntity);
+                        this.SelectedEntity[att] = attributeValue.Entity;
+                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
+                        {
+                            serviceProxy.Update(this.SelectedEntity);
+                            await context.PostAsync($"I've update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record with the new {attributeName.Entity} {attributeValue.Entity}");
+                        }
+                    }
+                    else
+                    {
+                        await context.PostAsync($"I wasn't able to update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record. I didn't recognize the field name.");
                     }
                 }
-                string displayName = RetrieveEntityDisplayName(metadata, false);
-                await context.PostAsync($"I've update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record with the new {attributeName.Entity} {attributeValue.Entity}");
+                else
+                {
+                    await context.PostAsync($"I wasn't able to update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record. I didn't recognize the field name and value.");
+                }
             }
             else
             {
@@ -327,7 +352,7 @@ namespace CRMBot.Dialogs
                     {
                         if (attributeName != null)
                         {
-                            string att = CrmHelper.FindAttribute(metadata, attributeName.Entity);
+                            string att = CrmHelper.FindAttributeLogicalName(metadata, attributeName.Entity);
                             SetValue(entity, metadata, att, attributeValue);
                         }
                         else
@@ -386,6 +411,8 @@ namespace CRMBot.Dialogs
             }
             else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
             {
+                string filteredEntitiesList = this.BuildFilteredEntitiesList();
+                await context.PostAsync($"I found {this.FilteredEntities.Length} {entityDisplayName} that match. To select one say a number below.\r\n{filteredEntitiesList}");
             }
             else
             {
@@ -541,14 +568,64 @@ namespace CRMBot.Dialogs
             if (this.FilteredEntities != null)
             {
                 EntityMetadata entityMetadata = null;
+                List<string> columns = new List<string>();
                 for (int i = 0; i < this.FilteredEntities.Length && i < MAX_RECORDS_TO_SHOW; i++)
                 {
                     if (entityMetadata == null)
                     {
                         entityMetadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.FilteredEntities[i].LogicalName);
+
+                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
+                        {
+                            columns.Add(entityMetadata.PrimaryNameAttribute);
+                            QueryExpression expression = new QueryExpression("savedquery");
+                            expression.ColumnSet = new ColumnSet(new string[] { "savedqueryid", "layoutxml" });
+                            expression.Criteria.AddCondition("isdefault", ConditionOperator.Equal, new object[] { true });
+                            expression.Criteria.AddCondition("returnedtypecode", ConditionOperator.Equal, new object[] { entityMetadata.LogicalName });
+                            expression.AddOrder("querytype", OrderType.Ascending);
+                            EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
+                            if (collection.Entities != null)
+                            {
+                                if (collection.Entities.Count > 0 && collection.Entities[0]["layoutxml"] != null)
+                                {
+                                    string layoutXml = collection.Entities[0]["layoutxml"].ToString();
+                                    Grid grid = Grid.Deserialize(layoutXml);
+                                    if (grid.Row != null && grid.Row.Cells != null)
+                                    {
+                                        foreach (Cell cell in grid.Row.Cells)
+                                        {
+                                            if (!columns.Contains(cell.Name))
+                                            {
+                                                columns.Add(cell.Name);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                     sb.Append($"{i + 1}. ");
-                    sb.Append(this.FilteredEntities[i][entityMetadata.PrimaryNameAttribute]);
+                    for (int j = 0; j < columns.Count; j++)
+                    {
+                        string column = columns[j];
+                        string displayValue = this.GetAttributeDisplayValue(this.FilteredEntities[i], column);
+                        if (j == 1)
+                        {
+                            sb.Append("(");
+                        }
+                        if (!string.IsNullOrEmpty(displayValue))
+                        {
+                            if (j > 1)
+                            {
+                                sb.Append(", ");
+                            }
+                            sb.Append(displayValue);
+                        }
+                    }
+                    if (columns.Count > 1)
+                    {
+                        sb.Append(")");
+                    }
                     sb.Append("\r\n");
                     if (i == MAX_RECORDS_TO_SHOW - 1)
                     {
@@ -617,7 +694,7 @@ namespace CRMBot.Dialogs
                     }
                 }
             }
-            if (this.SelectedEntity == null)
+            if (this.SelectedEntity == null && (FilteredEntities == null || FilteredEntities.Length == 0))
             {
                 this.SelectedEntity = previouslySelectedEntity;
             }
@@ -627,7 +704,7 @@ namespace CRMBot.Dialogs
         public static string BuildCommandList(string[] phrases)
         {
             StringBuilder sb = new StringBuilder();
-            for(int i = 0; i < phrases.Length; i++)
+            for (int i = 0; i < phrases.Length; i++)
             {
                 sb.Append("\r\n");
                 sb.Append(i + 1);
@@ -641,7 +718,7 @@ namespace CRMBot.Dialogs
         {
             if (attributeValue != null && !string.IsNullOrEmpty(attributeValue.Entity))
             {
-                string att = CrmHelper.FindAttribute(metadata, attributeName);
+                string att = CrmHelper.FindAttributeLogicalName(metadata, attributeName);
 
                 AttributeMetadata attMetadata = metadata.Attributes.FirstOrDefault(a => a.LogicalName == att);
                 if (string.IsNullOrEmpty(att))
@@ -688,6 +765,70 @@ namespace CRMBot.Dialogs
                 }
             }
         }
+
+        protected string GetAttributeDisplayValue(Entity entity, string attributeName)
+        {
+            if (entity != null && entity.Attributes != null && entity.Attributes.Contains(attributeName) && entity[attributeName] != null)
+            {
+                return entity[attributeName].ToString();
+            }
+            return string.Empty;
+            /*TODO
+            object att = this.SelectedEntity[attributeName];
+
+            string att = CrmHelper.FindAttribute(metadata, attributeName);
+
+                AttributeMetadata attMetadata = metadata.Attributes.FirstOrDefault(a => a.LogicalName == att);
+                if (string.IsNullOrEmpty(att))
+                {
+                    att = metadata.PrimaryNameAttribute;
+                }
+
+                if (!string.IsNullOrEmpty(att))
+                {
+                    object value = null;
+                    switch (attMetadata.AttributeType)
+                    {
+                        case AttributeTypeCode.Integer:
+                        case AttributeTypeCode.BigInt:
+                            value = Int32.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.Boolean:
+                            value = bool.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.DateTime:
+                            value = DateTime.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.Decimal:
+                        case AttributeTypeCode.Money:
+                            value = Decimal.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.Double:
+                            value = double.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.Uniqueidentifier:
+                            value = Guid.Parse(attributeValue.Entity);
+                            break;
+                        case AttributeTypeCode.Picklist:
+                            value = new OptionSetValue()
+                            {
+                                Value = Int32.Parse(attributeValue.Entity)
+                            };
+                            break;
+                        default:
+                            value = attributeValue.Entity;
+                            break;
+                    }
+                    entity[att] = value;
+                }
+            }
+            */
+
+        }
+        protected string GetAttributeDisplayValue(string attributeName)
+        {
+            return this.GetAttributeDisplayValue(this.SelectedEntity, attributeName);
+        }
         protected string RetrieveEntityDisplayName(EntityMetadata entityMetadata, bool showPlural)
         {
             string displayName = (showPlural) ? entityMetadata.LogicalCollectionName : entityMetadata.LogicalName;
@@ -705,7 +846,7 @@ namespace CRMBot.Dialogs
         {
             if (attribute != null)
             {
-                string att = CrmHelper.FindAttribute(metadata, attribute.Type);
+                string att = CrmHelper.FindAttributeLogicalName(metadata, attribute.Type);
                 if (!string.IsNullOrEmpty(att))
                 {
                     expression.Criteria.AddCondition(att, ConditionOperator.Equal, attribute.Entity);
@@ -721,7 +862,7 @@ namespace CRMBot.Dialogs
         {
             if (attributeName != null && attributeValue != null)
             {
-                string att = CrmHelper.FindAttribute(entity, attributeName.Entity);
+                string att = CrmHelper.FindAttributeLogicalName(entity, attributeName.Entity);
                 if (!string.IsNullOrEmpty(att))
                 {
                     expression.Criteria.AddCondition(att, ConditionOperator.Equal, attributeValue.Entity.Replace(" . ", ".").Replace(" - ", "-").Replace(" @ ", "@"));

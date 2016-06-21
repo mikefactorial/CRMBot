@@ -35,26 +35,27 @@ namespace CRMBot
             {
                 if (message.Type == "Message")
                 {
-                    if (message.Text.ToLower().StartsWith("portalreg"))
+                    if (message.Text.ToLower() == "ping")
                     {
-                        ChatState.ClearChatState(message.ConversationId);
-                        string[] split = message.Text.Split('|');
-                        if (split.Length > 1)
+                        QueryExpression query = new QueryExpression("systemuser");
+                        query.PageInfo = new PagingInfo();
+                        query.PageInfo.Count = 1;
+                        query.PageInfo.PageNumber = 1;
+                        query.ColumnSet = new ColumnSet(new string[] { "systeuserid" });
+                        try
                         {
-                            QueryExpression query = new QueryExpression("cobalt_crmorganization");
-                            query.Criteria.AddCondition("cobalt_registrationcode", ConditionOperator.Equal, message.Text);
-                            using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(split[1]))
+                            using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(message.ConversationId))
                             {
                                 EntityCollection collection = serviceProxy.RetrieveMultiple(query);
-                                if (collection.Entities != null && collection.Entities.Count == 1)
-                                {
-                                    return message.CreateReplyMessage("You're all set. Let us know if you have any questions.");
-                                }
+                                return message.CreateReplyMessage("true");
                             }
                         }
-                        return message.CreateReplyMessage("Huh?");
+                        catch
+                        {
+                            return message.CreateReplyMessage("false");
+                        }
                     }
-                    else if (message.Text.ToLower().StartsWith("bot"))
+                    else if (message.Text.ToLower().StartsWith("bot1") || message.Text.ToLower().StartsWith("bot0"))
                     {
                         QueryExpression query = new QueryExpression("cobalt_crmorganization");
                         query.Criteria.AddCondition("cobalt_registrationcode", ConditionOperator.Equal, message.Text);

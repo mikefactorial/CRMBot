@@ -55,7 +55,7 @@ namespace CRMBot.Dialogs
                 }
                 else if (bestEntity.Type == EntityTypeNames.EntityType.EntityTypeName)
                 {
-                    bestEntity.Entity = CrmHelper.FindEntity(conversationId, bestEntity.Entity);
+                    bestEntity.Entity = CrmHelper.FindEntityLogicalName(conversationId, bestEntity.Entity);
                 }
                 if (bestEntity.Type.Contains(":"))
                 {

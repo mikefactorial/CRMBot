@@ -21,7 +21,7 @@ namespace CRMBot
         private const int MIN_TEXTLENGTHFORENTITYSEARCH = 4;
         private static Entity defaultSettings = null;
 
-        public static string FindEntity(string conversationId, string text)
+        public static string FindEntityLogicalName(string conversationId, string text)
         {
             EntityMetadata[] metadata = ChatState.RetrieveChatState(conversationId).Metadata;
             string subText = text.ToLower();
@@ -141,7 +141,7 @@ namespace CRMBot
             return string.Empty;
 
         }
-        public static string FindAttribute(EntityMetadata entity, string text)
+        public static string FindAttributeLogicalName(EntityMetadata entity, string text)
         {
             string subText = text.ToLower();
             //Equals
