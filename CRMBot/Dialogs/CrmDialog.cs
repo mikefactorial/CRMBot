@@ -201,6 +201,7 @@ namespace CRMBot.Dialogs
                     this.SelectedEntity = this.FilteredEntities[selection - 1];
                     if (this.SelectedEntity != null)
                     {
+                        this.FilteredEntities = null;
                         EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.SelectedEntity.LogicalName);
                         string displayName = RetrieveEntityDisplayName(metadata, false);
                         await context.PostAsync($"Got it. You've selected the {displayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]}. Now say {BuildCommandList(ActionPhrases)}");
@@ -694,7 +695,7 @@ namespace CRMBot.Dialogs
                     }
                 }
             }
-            if (this.SelectedEntity == null && (FilteredEntities == null || FilteredEntities.Length == 0))
+            if (this.SelectedEntity == null)
             {
                 this.SelectedEntity = previouslySelectedEntity;
             }
