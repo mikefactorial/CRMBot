@@ -221,7 +221,7 @@ namespace CRMBot.Dialogs
                     await context.PostAsync($"Hmmm. I couldn't select that record. Make sure the number is within the current range of selected records (i.e. 1 to {this.FilteredEntities.Length}).");
                 }
             }
-            else if (result.Query.ToLower().Contains("help"))
+            else if (result.Query.ToLower().StartsWith("help"))
             {
                 if (this.SelectedEntity == null)
                 {
@@ -234,7 +234,7 @@ namespace CRMBot.Dialogs
                     await context.PostAsync($"You've selected a {displayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]}? Now say {BuildCommandList(ActionPhrases)}");
                 }
             }
-            else if (result.Query.ToLower().Contains("forget") || result.Query.ToLower().Contains("start over") || result.Query.ToLower().Contains("done"))
+            else if (result.Query.ToLower().StartsWith("forget") || result.Query.ToLower().Contains("start over") || result.Query.ToLower().Contains("done"))
             {
                 this.Attachments = null;
                 if (this.SelectedEntity != null && this.SelectedEntityMetadata != null)
@@ -248,14 +248,14 @@ namespace CRMBot.Dialogs
                     await context.PostAsync($"Okay. We're done with that.");
                 }
             }
-            else if (result.Query.ToLower().Contains("goodbye"))
+            else if (result.Query.ToLower().StartsWith("goodbye") || result.Query.ToLower().StartsWith("bye"))
             {
                 this.FilteredEntities = null;
                 this.Attachments = null;
                 this.SelectedEntity = null;
                 await context.PostAsync($"CRM you later {chatState.UserFirstName}...");
             }
-            else if (result.Query.ToLower().Contains("thank"))
+            else if (result.Query.ToLower().StartsWith("thank"))
             {
                 await context.PostAsync($"You're welcome {chatState.UserFirstName}!");
             }
