@@ -93,7 +93,15 @@ namespace CRMBot
                                     {
                                         return message.CreateReplyMessage("Hmmm... Unfortunately, I can't use this app to communicate right now. You can try sending the registraiton code using either Facebook Messenger or Skype.");
                                     }
-                                    return message.CreateReplyMessage("Got it! Your registration has been confirmed. Now go back to the registration portal to complete your setup. Once you're done say 'Help' to get started.");
+                                    if (ChatState.SetChatState(message))
+                                    {
+                                        ChatState chatState = ChatState.RetrieveChatState(message.ConversationId);
+                                        return message.CreateReplyMessage($"Welcome {chatState.UserFirstName}! Your registration has been confirmed. To get started say something like {Dialogs.CrmDialog.BuildCommandList(CRMBot.Dialogs.CrmDialog.WelcomePhrases)}.");
+                                    }
+                                    else
+                                    {
+                                        return message.CreateReplyMessage("Hmmm... I found your registration but I couldn't connect to your CRM Organization. Make sure you've entered all information or try registering again at cobalt.net/BotRegistration");
+                                    }
                                 }
                             }
                         }

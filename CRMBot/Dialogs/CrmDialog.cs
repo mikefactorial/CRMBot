@@ -174,6 +174,7 @@ namespace CRMBot.Dialogs
         [LuisIntent("None")]
         public async Task None(IDialogContext context, LuisResult result)
         {
+            ChatState chatState = ChatState.RetrieveChatState(conversationId);
             int selection = -1;
 
             EntityRecommendation ordinal = result.RetrieveEntity(this.conversationId, EntityTypeNames.Ordinal);
@@ -224,7 +225,7 @@ namespace CRMBot.Dialogs
             {
                 if (this.SelectedEntity == null)
                 {
-                    await context.PostAsync($"Here are some commands you can try... {CrmDialog.BuildCommandList(CrmDialog.HelpPhrases)}.");
+                    await context.PostAsync($"Hi {chatState.UserFirstName}! Here are some commands you can try... {CrmDialog.BuildCommandList(CrmDialog.HelpPhrases)}.");
                 }
                 else
                 {
@@ -252,11 +253,11 @@ namespace CRMBot.Dialogs
                 this.FilteredEntities = null;
                 this.Attachments = null;
                 this.SelectedEntity = null;
-                await context.PostAsync("CRM you later...");
+                await context.PostAsync($"CRM you later {chatState.UserFirstName}...");
             }
             else if (result.Query.ToLower().Contains("thank"))
             {
-                await context.PostAsync($"You're welcome!");
+                await context.PostAsync($"You're welcome {chatState.UserFirstName}!");
             }
             else if (result.Query.ToLower().StartsWith("say"))
             {
@@ -266,13 +267,13 @@ namespace CRMBot.Dialogs
             {
                 if (result.Query.ToLower().Contains("hello") || result.Query.ToLower().Contains("hi"))
                 {
-                    await context.PostAsync($"Hey there!");
+                    await context.PostAsync($"Hey there {chatState.UserFirstName}!");
                 }
                 else if (result.Query.ToLower().Contains("what's up") || result.Query.ToLower().Contains("waddup") || result.Query.ToLower().Contains("sup") || result.Query.ToLower().Contains("whats up"))
                 {
                     await context.PostAsync($"Nothing much, just serving up some CRM data like it's my job.");
                 }
-                await context.PostAsync($"To get started say something like {CrmDialog.BuildCommandList(CrmDialog.WelcomePhrases)}.");
+                await context.PostAsync($"I'm here to help {chatState.UserFirstName}! To get started say something like {CrmDialog.BuildCommandList(CrmDialog.WelcomePhrases)}.");
             }
             context.Wait(MessageReceived);
         }

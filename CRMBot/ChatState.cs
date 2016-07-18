@@ -59,7 +59,7 @@ namespace CRMBot
                     {
                         QueryExpression query = new QueryExpression("cobalt_crmorganization");
                         query.Criteria.AddCondition("statuscode", ConditionOperator.Equal, 533470000);
-                        query.ColumnSet = new ColumnSet(new string[] { "cobalt_organizationurl", "cobalt_username", "cobalt_encryptedpassword" });
+                        query.ColumnSet = new ColumnSet(new string[] { "cobalt_organizationurl", "cobalt_username", "cobalt_encryptedpassword", "cobalt_leadid" });
                         if (message.From.ChannelId.ToLower() == "facebook")
                         {
                             query.Criteria.AddCondition("cobalt_facebookmessengerid", ConditionOperator.Equal, message.From.Id);
@@ -68,7 +68,7 @@ namespace CRMBot
                         {
                             query.Criteria.AddCondition("cobalt_skypeid", ConditionOperator.Equal, message.From.Id);
                         }
-
+                        query.AddOrder("modifiedon", OrderType.Descending);
                         using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(Guid.Empty.ToString()))
                         {
                             EntityCollection collection = serviceProxy.RetrieveMultiple(query);
@@ -79,13 +79,29 @@ namespace CRMBot
                                 policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
 
                                 ChatState state = new ChatState(message.ConversationId);
-                                state.OrganizationUrl = (string)collection.Entities[0]["cobalt_organizationurl"];
-                                state.OrganizationServiceUrl = (string)collection.Entities[0]["cobalt_organizationurl"];
-                                state.OrganizationServiceUrl += (!state.OrganizationServiceUrl.EndsWith("/")) ? "/XRMServices/2011/Organization.svc" : "XRMServices/2011/Organization.svc";
-                                state.UserName = (string)collection.Entities[0]["cobalt_username"];
-                                state.Password = Decrypt((string)collection.Entities[0]["cobalt_encryptedpassword"]);
-                                MemoryCache.Default.Add(message.ConversationId, state, policy);
-                                returnValue = true;
+                                state.UserFirstName = "Friend";
+                                if (collection.Entities[0].Contains("cobalt_organizationurl") && collection.Entities[0].Contains("cobalt_username") && collection.Entities[0].Contains("cobalt_encryptedpassword"))
+                                {
+                                    if (collection.Entities[0].Contains("cobalt_leadid"))
+                                    {
+                                        EntityReference leadRef = collection.Entities[0]["cobalt_leadid"] as EntityReference;
+                                        if (leadRef != null)
+                                        {
+                                            Entity lead = serviceProxy.Retrieve(leadRef.LogicalName, leadRef.Id, new ColumnSet(new string[] { "leadid", "firstname" }));
+                                            if (lead.Contains("firstname"))
+                                            {
+                                                state.UserFirstName = lead["firstname"].ToString();
+                                            }
+                                        }
+                                    }
+                                    state.OrganizationUrl = (string)collection.Entities[0]["cobalt_organizationurl"];
+                                    state.OrganizationServiceUrl = (string)collection.Entities[0]["cobalt_organizationurl"];
+                                    state.OrganizationServiceUrl += (!state.OrganizationServiceUrl.EndsWith("/")) ? "/XRMServices/2011/Organization.svc" : "XRMServices/2011/Organization.svc";
+                                    state.UserName = (string)collection.Entities[0]["cobalt_username"];
+                                    state.Password = Decrypt((string)collection.Entities[0]["cobalt_encryptedpassword"]);
+                                    MemoryCache.Default.Add(message.ConversationId, state, policy);
+                                    returnValue = true;
+                                }
                             }
                         }
                     }
@@ -111,7 +127,6 @@ namespace CRMBot
             {
                 throw new ArgumentNullException("The string which needs to be decrypted can not be null.");
             }
-
 
             if (CrmHelper.DefaultSettings["cobalt_organizationdeskey"] != null && !string.IsNullOrEmpty(CrmHelper.DefaultSettings["cobalt_organizationdeskey"].ToString()))
             {
@@ -144,6 +159,10 @@ namespace CRMBot
             get; set;
         }
         public string Password
+        {
+            get; set;
+        }
+        public string UserFirstName
         {
             get; set;
         }
