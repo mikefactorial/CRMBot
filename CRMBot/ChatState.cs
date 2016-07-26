@@ -79,7 +79,7 @@ namespace CRMBot
                                 policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
 
                                 ChatState state = new ChatState(message.ConversationId);
-                                state.UserFirstName = "Friend";
+                                state.UserFirstName = "";
                                 if (collection.Entities[0].Contains("cobalt_organizationurl") && collection.Entities[0].Contains("cobalt_username") && collection.Entities[0].Contains("cobalt_encryptedpassword"))
                                 {
                                     if (collection.Entities[0].Contains("cobalt_leadid"))
