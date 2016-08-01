@@ -29,8 +29,23 @@ namespace CRMBot
     [BotAuthentication]
     public class MessagesController : ApiController
     {
-        public async Task<Message> Post([FromBody]Message message)
+        public async Task<HttpResponseMessage> Post([FromBody]Activity message)
         {
+            if (message.Type == ActivityTypes.Message)
+            {
+                ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
+                // return our reply to the user
+                Activity reply = message.CreateReply("Hi there. CRM Bot is undergoing an upgrade of it's framework version to better serve your CRM needs. Check back soon. CRM you later...");
+                await connector.Conversations.ReplyToActivityAsync(reply);
+            }
+            else
+            {
+                //HandleSystemMessage(activity);
+            }
+            var response = Request.CreateResponse(HttpStatusCode.OK);
+            return response;
+
+            /*
             try
             {
                 if (message.Type == "Message")
@@ -44,15 +59,15 @@ namespace CRMBot
                         query.ColumnSet = new ColumnSet(new string[] { "systeuserid" });
                         try
                         {
-                            using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(message.ConversationId))
+                            using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(message.Conversation.Id))
                             {
                                 EntityCollection collection = serviceProxy.RetrieveMultiple(query);
-                                return message.CreateReplyMessage("true");
+                                return message.CreateReply("true");
                             }
                         }
                         catch
                         {
-                            return message.CreateReplyMessage("false");
+                            return message.CreateReply("false");
                         }
                     }
                     else if (message.Text.ToLower().StartsWith("bot1") || message.Text.ToLower().StartsWith("bot0"))
@@ -66,17 +81,17 @@ namespace CRMBot
                             {
                                 if (message.From != null)
                                 {
-                                    if (message.From.ChannelId.ToLower() == "facebook" || message.From.ChannelId.ToLower() == "skype")
+                                    if (message.ChannelId.ToLower() == "facebook" || message.ChannelId.ToLower() == "skype")
                                     {
-                                        if (message.From.ChannelId.ToLower() == "facebook")
+                                        if (message.ChannelId.ToLower() == "facebook")
                                         {
                                             collection.Entities[0]["cobalt_facebookmessengerid"] = message.From.Id;
-                                            collection.Entities[0]["cobalt_firstconversationid"] = message.ConversationId;
+                                            collection.Entities[0]["cobalt_firstconversationid"] = message.Conversation.Id;
                                         }
-                                        else if (message.From.ChannelId.ToLower() == "skype")
+                                        else if (message.ChannelId.ToLower() == "skype")
                                         {
                                             collection.Entities[0]["cobalt_skypeid"] = message.From.Id;
-                                            collection.Entities[0]["cobalt_firstconversationid"] = message.ConversationId;
+                                            collection.Entities[0]["cobalt_firstconversationid"] = message.Conversation.Id;
                                         }
                                         serviceProxy.Update(collection.Entities[0]);
 
@@ -91,44 +106,44 @@ namespace CRMBot
                                     }
                                     else
                                     {
-                                        return message.CreateReplyMessage("Hmmm... Unfortunately, I can't use this app to communicate right now. You can try sending the registraiton code using either Facebook Messenger or Skype.");
+                                        return message.CreateReply("Hmmm... Unfortunately, I can't use this app to communicate right now. You can try sending the registraiton code using either Facebook Messenger or Skype.");
                                     }
                                     if (ChatState.SetChatState(message))
                                     {
-                                        ChatState chatState = ChatState.RetrieveChatState(message.ConversationId);
-                                        return message.CreateReplyMessage($"Welcome {chatState.UserFirstName}! Your registration has been confirmed. To get started say something like {Dialogs.CrmDialog.BuildCommandList(CRMBot.Dialogs.CrmDialog.WelcomePhrases)}.");
+                                        ChatState chatState = ChatState.RetrieveChatState(message.Conversation.Id);
+                                        return message.CreateReply($"Welcome {chatState.UserFirstName}! Your registration has been confirmed. To get started say something like {Dialogs.CrmDialog.BuildCommandList(CRMBot.Dialogs.CrmDialog.WelcomePhrases)}.");
                                     }
                                     else
                                     {
-                                        return message.CreateReplyMessage("Hmmm... I found your registration but I couldn't connect to your CRM Organization. Make sure you've entered all information or try registering again at cobalt.net/BotRegistration");
+                                        return message.CreateReply("Hmmm... I found your registration but I couldn't connect to your CRM Organization. Make sure you've entered all information or try registering again at cobalt.net/BotRegistration");
                                     }
                                 }
                             }
                         }
-                        return message.CreateReplyMessage("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at cobalt.net/BotRegistration");
+                        return message.CreateReply("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at cobalt.net/BotRegistration");
                     }
 
                     if (!ChatState.SetChatState(message))
                     {
                         if (message.Text.ToLower().Contains("help"))
                         {
-                            return message.CreateReplyMessage($"Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization.");
+                            return message.CreateReply($"Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization.");
                         }
                         else if (message.Text.ToLower().Contains("goodbye"))
                         {
-                            return message.CreateReplyMessage("CRM you later...");
+                            return message.CreateReply("CRM you later...");
                         }
                         else if (message.Text.ToLower().Contains("thank"))
                         {
-                            return message.CreateReplyMessage($"You're welcome!");
+                            return message.CreateReply($"You're welcome!");
                         }
                         else if (message.Text.ToLower().StartsWith("say"))
                         {
-                            return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
+                            return message.CreateReply(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
                         }
                         else
                         {
-                            return message.CreateReplyMessage($"Hey there, I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization.");
+                            return message.CreateReply($"Hey there, I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization.");
                         }
                     }
                     else
@@ -143,15 +158,17 @@ namespace CRMBot
                                     attachments.Add(new System.Net.WebClient().DownloadData(attach.ContentUrl));
                                 }
                             }
-                            Dialogs.CrmDialog dialog = new Dialogs.CrmDialog(message.ConversationId);
+                            Dialogs.CrmDialog dialog = new Dialogs.CrmDialog(message.Conversation.Id);
                             dialog.Attachments = attachments;
 
                             if (string.IsNullOrEmpty(message.Text))
                             {
-                                return message.CreateReplyMessage($"I got your file. What would you like to do with it? You can say {string.Join(" or ", Dialogs.CrmDialog.AttachmentActionPhrases)}.");
+                                return message.CreateReply($"I got your file. What would you like to do with it? You can say {string.Join(" or ", Dialogs.CrmDialog.AttachmentActionPhrases)}.");
                             }
                         }
-                        return await Conversation.SendAsync(message, () => new Dialogs.CrmDialog(message.ConversationId));
+                        //TODO
+                        return message.CreateReply($"TODO Luis.");
+                        //return await Conversation.SendAsync(message, () => new Dialogs.CrmDialog(message.Conversation.Id));
                     }
                 }
                 else
@@ -161,19 +178,20 @@ namespace CRMBot
             }
             catch (Exception ex)
             {
-                return message.CreateReplyMessage($"Kabloooey! Well played human you just fried my circuits. Thanks for being patient, I'm still learning to do some things while in preview. Hopefully, I'll get this worked out soon. Here's your prize: {ex.Message}");
+                return message.CreateReply($"Kabloooey! Well played human you just fried my circuits. Thanks for being patient, I'm still learning to do some things while in preview. Hopefully, I'll get this worked out soon. Here's your prize: {ex.Message}");
             }
+            */
         }
 
-        private static Message HandleSystemMessage(Message message)
+        private static Activity HandleSystemMessage(Activity message)
         {
-            if (message.Type == "BotAddedToConversation")
+            if (message.Type.ToLower() == "botaddedtoconversation")
             {
-                return message.CreateReplyMessage($"Hello {message.From?.Name}! To get started say something like {Dialogs.CrmDialog.BuildCommandList(CRMBot.Dialogs.CrmDialog.WelcomePhrases)}.");
+                return message.CreateReply($"Hello {message.From?.Name}! To get started say something like {Dialogs.CrmDialog.BuildCommandList(CRMBot.Dialogs.CrmDialog.WelcomePhrases)}.");
             }
-            else if (message.Type == "BotRemovedFromConversation")
+            else if (message.Type.ToLower() == "botremovedfromconversation")
             {
-                return message.CreateReplyMessage($"See ya {message.From?.Name}!");
+                return message.CreateReply($"See ya {message.From?.Name}!");
             }
 
             return null;
@@ -191,29 +209,29 @@ namespace CRMBot
                 {
                     if (message.Text.ToLower().Contains("forget"))
                     {
-                        ChatState.RetrieveChatState(message.ConversationId).Attachments = null;
-                        if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
+                        ChatState.RetrieveChatState(message.Conversation.Id).Attachments = null;
+                        if (ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity != null)
                         {
-                            EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName);
-                            string primaryAtt = ChatState.RetrieveChatState(message.ConversationId).SelectedEntity[metadata.PrimaryNameAttribute].ToString();
-                            ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = null;
-                            return message.CreateReplyMessage($"Okay. We're done with {primaryAtt}");
+                            EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity.LogicalName);
+                            string primaryAtt = ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity[metadata.PrimaryNameAttribute].ToString();
+                            ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity = null;
+                            return message.CreateReply($"Okay. We're done with {primaryAtt}");
                         }
-                        return message.CreateReplyMessage($"Okay. We're done with that");
+                        return message.CreateReply($"Okay. We're done with that");
                     }
                     else if (message.Text.ToLower().Contains("say goodbye"))
                     {
-                        ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = null;
-                        ChatState.RetrieveChatState(message.ConversationId).Attachments = null;
-                        return message.CreateReplyMessage("I'll Be Back...");
+                        ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity = null;
+                        ChatState.RetrieveChatState(message.Conversation.Id).Attachments = null;
+                        return message.CreateReply("I'll Be Back...");
                     }
                     else if (message.Text.ToLower().Contains("thank"))
                     {
-                        return message.CreateReplyMessage("You're welcome!");
+                        return message.CreateReply("You're welcome!");
                     }
                     else if (message.Text.ToLower().Contains("say"))
                     {
-                        return message.CreateReplyMessage(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
+                        return message.CreateReply(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
                     }
                     else
                     {
@@ -221,7 +239,7 @@ namespace CRMBot
 
                         if (result == null)
                         {
-                            return message.CreateReplyMessage($"Hmmm...I can't seem to connect to the internet. Please check your connection.");
+                            return message.CreateReply($"Hmmm...I can't seem to connect to the internet. Please check your connection.");
                         }
 
                         string bestIntention = result.RetrieveIntention();
@@ -234,7 +252,7 @@ namespace CRMBot
                             {
                                 rejectIndex = 0;
                             }
-                            return message.CreateReplyMessage(RejectionStrings[rejectIndex]);
+                            return message.CreateReply(RejectionStrings[rejectIndex]);
 
                         }
                         else if (bestIntention == "Send")
@@ -250,12 +268,12 @@ namespace CRMBot
                         }
                         else if (bestIntention == "FollowUp")
                         {
-                            if (ChatState.RetrieveChatState(message.ConversationId).SelectedEntity != null)
+                            if (ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity != null)
                             {
                                 Entity entity = new Entity("task");
-                                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName);
-                                entity["subject"] = $"Follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity[metadata.PrimaryNameAttribute]}";
-                                entity["regardingobjectid"] = new EntityReference(ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.LogicalName, ChatState.RetrieveChatState(message.ConversationId).SelectedEntity.Id);
+                                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity.LogicalName);
+                                entity["subject"] = $"Follow up with {ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity[metadata.PrimaryNameAttribute]}";
+                                entity["regardingobjectid"] = new EntityReference(ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity.LogicalName, ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity.Id);
 
                                 DateTime date = DateTime.MinValue;
                                 CRMBot.LuisResults.Entity dateEntity = result.RetrieveEntity(CRMBot.LuisResults.EntityTypeNames.DateTime);
@@ -276,16 +294,16 @@ namespace CRMBot
                                 }
                                 if (date != DateTime.MinValue)
                                 {
-                                    return message.CreateReplyMessage($"Okay...I've created task to follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]} on { date.ToLongDateString() }");
+                                    return message.CreateReply($"Okay...I've created task to follow up with {ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity["lastname"]} on { date.ToLongDateString() }");
                                 }
                                 else
                                 {
-                                    return message.CreateReplyMessage($"Okay...I've created task to follow up with {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.ConversationId).SelectedEntity["lastname"]}");
+                                    return message.CreateReply($"Okay...I've created task to follow up with {ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity["firstname"]} {ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity["lastname"]}");
                                 }
                             }
                             else
                             {
-                                return message.CreateReplyMessage($"Hmmm...I'm not sure who to follow up with. Say for example 'Locate contact John Smith'");
+                                return message.CreateReply($"Hmmm...I'm not sure who to follow up with. Say for example 'Locate contact John Smith'");
                             }
                         }
                         else if (bestIntention == "Locate" || bestIntention == "Select")
@@ -341,7 +359,7 @@ namespace CRMBot
                                         }
                                         if (collection.Entities != null && collection.Entities.Count == 1)
                                         {
-                                            ChatState.RetrieveChatState(message.ConversationId).SelectedEntity = collection.Entities[0];
+                                            ChatState.RetrieveChatState(message.Conversation.Id).SelectedEntity = collection.Entities[0];
 
                                             output = $"I found a {entityDisplayName} named {collection.Entities[0][metadata.PrimaryNameAttribute]} what would you like to do next? You can say {string.Join(" or ", ActionPhrases)}";
                                         }
@@ -357,15 +375,15 @@ namespace CRMBot
                         // return our reply to the user
                         if (!string.IsNullOrEmpty(output))
                         {
-                            return message.CreateReplyMessage(output);
+                            return message.CreateReply(output);
                         }
                     }
                 }
-                return message.CreateReplyMessage("Sorry, I didn't understand that. I'm still learning. Hopefully my human trainers will help me understand that request next time.");
+                return message.CreateReply("Sorry, I didn't understand that. I'm still learning. Hopefully my human trainers will help me understand that request next time.");
             }
             catch (Exception ex)
             {
-                return message.CreateReplyMessage($"Kabloooey! Nice work you just fried my circuits. Well played human. Here's your prize: {ex.Message}");
+                return message.CreateReply($"Kabloooey! Nice work you just fried my circuits. Well played human. Here's your prize: {ex.Message}");
             }
         }*/
     }

@@ -33,38 +33,38 @@ namespace CRMBot
         {
             this.conversationId = conversationId;
         }
-        public static bool SetChatState(Message message)
+        public static bool SetChatState(Activity message)
         {
             bool returnValue = false;
             //MODEBUG TODO
-            if (message.From.ChannelId.ToString() != "facebook" && message.From.ChannelId.ToString() != "skype")
+            if (message.ChannelId.ToString() != "facebook" && message.ChannelId.ToString() != "skype")
             {
                 CacheItemPolicy policy = new CacheItemPolicy();
                 policy.Priority = CacheItemPriority.Default;
                 policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
 
-                ChatState state = new ChatState(message.ConversationId);
+                ChatState state = new ChatState(message.Conversation.Id);
                 state.OrganizationServiceUrl = ConfigurationManager.AppSettings["OrganizationServiceUrl"];
                 state.UserName = ConfigurationManager.AppSettings["UserName"];
                 state.Password = ConfigurationManager.AppSettings["Password"];
 
-                MemoryCache.Default.Add(message.ConversationId, state, policy);
+                MemoryCache.Default.Add(message.Conversation.Id, state, policy);
                 returnValue = true;
             }
-            else if (!MemoryCache.Default.Contains(message.ConversationId))
+            else if (!MemoryCache.Default.Contains(message.Conversation.Id))
             {
                 if (message.From != null)
                 {
-                    if (message.From.ChannelId.ToLower() == "facebook" || message.From.ChannelId.ToLower() == "skype")
+                    if (message.ChannelId.ToLower() == "facebook" || message.ChannelId.ToLower() == "skype")
                     {
                         QueryExpression query = new QueryExpression("cobalt_crmorganization");
                         query.Criteria.AddCondition("statuscode", ConditionOperator.Equal, 533470000);
                         query.ColumnSet = new ColumnSet(new string[] { "cobalt_organizationurl", "cobalt_username", "cobalt_encryptedpassword", "cobalt_leadid" });
-                        if (message.From.ChannelId.ToLower() == "facebook")
+                        if (message.ChannelId.ToLower() == "facebook")
                         {
                             query.Criteria.AddCondition("cobalt_facebookmessengerid", ConditionOperator.Equal, message.From.Id);
                         }
-                        else if (message.From.ChannelId.ToLower() == "skype")
+                        else if (message.ChannelId.ToLower() == "skype")
                         {
                             query.Criteria.AddCondition("cobalt_skypeid", ConditionOperator.Equal, message.From.Id);
                         }
@@ -78,7 +78,7 @@ namespace CRMBot
                                 policy.Priority = CacheItemPriority.Default;
                                 policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
 
-                                ChatState state = new ChatState(message.ConversationId);
+                                ChatState state = new ChatState(message.Conversation.Id);
                                 state.UserFirstName = "";
                                 if (collection.Entities[0].Contains("cobalt_organizationurl") && collection.Entities[0].Contains("cobalt_username") && collection.Entities[0].Contains("cobalt_encryptedpassword"))
                                 {
@@ -87,7 +87,7 @@ namespace CRMBot
                                         EntityReference leadRef = collection.Entities[0]["cobalt_leadid"] as EntityReference;
                                         if (leadRef != null)
                                         {
-                                            Entity lead = serviceProxy.Retrieve(leadRef.LogicalName, leadRef.Id, new ColumnSet(new string[] { "leadid", "firstname" }));
+                                            Microsoft.Xrm.Sdk.Entity lead = serviceProxy.Retrieve(leadRef.LogicalName, leadRef.Id, new ColumnSet(new string[] { "leadid", "firstname" }));
                                             if (lead.Contains("firstname"))
                                             {
                                                 state.UserFirstName = lead["firstname"].ToString();
@@ -99,7 +99,7 @@ namespace CRMBot
                                     state.OrganizationServiceUrl += (!state.OrganizationServiceUrl.EndsWith("/")) ? "/XRMServices/2011/Organization.svc" : "XRMServices/2011/Organization.svc";
                                     state.UserName = (string)collection.Entities[0]["cobalt_username"];
                                     state.Password = Decrypt((string)collection.Entities[0]["cobalt_encryptedpassword"]);
-                                    MemoryCache.Default.Add(message.ConversationId, state, policy);
+                                    MemoryCache.Default.Add(message.Conversation.Id, state, policy);
                                     returnValue = true;
                                 }
                             }
