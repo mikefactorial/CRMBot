@@ -31,6 +31,7 @@ namespace CRMBot
     {
         public async Task<HttpResponseMessage> Post([FromBody]Activity message)
         {
+            /* Bot out of service message
             if (message.Type == ActivityTypes.Message)
             {
                 ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
@@ -44,11 +45,15 @@ namespace CRMBot
             }
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
+            */
+            ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
 
-            /*
-            try
+            Activity reply = message.CreateReply();
+            reply.Type = ActivityTypes.Typing;
+            reply.Text = null;
+            await connector.Conversations.ReplyToActivityAsync(reply); try
             {
-                if (message.Type == "Message")
+                if (message.Type == ActivityTypes.Message)
                 {
                     if (message.Text.ToLower() == "ping")
                     {
@@ -62,12 +67,12 @@ namespace CRMBot
                             using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(message.Conversation.Id))
                             {
                                 EntityCollection collection = serviceProxy.RetrieveMultiple(query);
-                                return message.CreateReply("true");
+                                await connector.Conversations.ReplyToActivityAsync(message.CreateReply("true"));
                             }
                         }
                         catch
                         {
-                            return message.CreateReply("false");
+                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply("false"));
                         }
                     }
                     else if (message.Text.ToLower().StartsWith("bot1") || message.Text.ToLower().StartsWith("bot0"))
@@ -103,47 +108,53 @@ namespace CRMBot
                                         setState.State = new OptionSetValue(0);
                                         setState.Status = new OptionSetValue(533470000);
                                         serviceProxy.Execute(setState);
+                                        if (ChatState.SetChatState(message))
+                                        {
+                                            ChatState chatState = ChatState.RetrieveChatState(message.Conversation.Id);
+                                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Welcome {chatState.UserFirstName}! Thanks for registering. To get started say something like {Dialogs.CrmDialog.BuildCommandList(CRMBot.Dialogs.CrmDialog.WelcomePhrases)}."));
+                                        }
+                                        else
+                                        {
+                                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hmmm... I found your registration but I couldn't connect to your CRM Organization. Make sure you've entered all information or try registering again at cobalt.net/BotRegistration"));
+                                        }
                                     }
                                     else
                                     {
-                                        return message.CreateReply("Hmmm... Unfortunately, I can't use this app to communicate right now. You can try sending the registraiton code using either Facebook Messenger or Skype.");
-                                    }
-                                    if (ChatState.SetChatState(message))
-                                    {
-                                        ChatState chatState = ChatState.RetrieveChatState(message.Conversation.Id);
-                                        return message.CreateReply($"Welcome {chatState.UserFirstName}! Your registration has been confirmed. To get started say something like {Dialogs.CrmDialog.BuildCommandList(CRMBot.Dialogs.CrmDialog.WelcomePhrases)}.");
-                                    }
-                                    else
-                                    {
-                                        return message.CreateReply("Hmmm... I found your registration but I couldn't connect to your CRM Organization. Make sure you've entered all information or try registering again at cobalt.net/BotRegistration");
+                                        await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hmmm... Unfortunately, I can't use this app to communicate right now. You can try sending the registraiton code using either Facebook Messenger or Skype."));
                                     }
                                 }
+                                else
+                                {
+                                    await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at cobalt.net/BotRegistration"));
+                                }
+                            }
+                            else
+                            {
+                                await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at cobalt.net/BotRegistration"));
                             }
                         }
-                        return message.CreateReply("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at cobalt.net/BotRegistration");
                     }
-
-                    if (!ChatState.SetChatState(message))
+                    else if (!ChatState.SetChatState(message))
                     {
                         if (message.Text.ToLower().Contains("help"))
                         {
-                            return message.CreateReply($"Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization.");
+                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization."));
                         }
                         else if (message.Text.ToLower().Contains("goodbye"))
                         {
-                            return message.CreateReply("CRM you later...");
+                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply("CRM you later..."));
                         }
                         else if (message.Text.ToLower().Contains("thank"))
                         {
-                            return message.CreateReply($"You're welcome!");
+                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"You're welcome!"));
                         }
                         else if (message.Text.ToLower().StartsWith("say"))
                         {
-                            return message.CreateReply(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4));
+                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply(message.Text.Substring(message.Text.ToLower().IndexOf("say") + 4)));
                         }
                         else
                         {
-                            return message.CreateReply($"Hey there, I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization.");
+                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Hey there, I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization."));
                         }
                     }
                     else
@@ -163,28 +174,30 @@ namespace CRMBot
 
                             if (string.IsNullOrEmpty(message.Text))
                             {
-                                return message.CreateReply($"I got your file. What would you like to do with it? You can say {string.Join(" or ", Dialogs.CrmDialog.AttachmentActionPhrases)}.");
+                                await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"I got your file. What would you like to do with it? You can say {string.Join(" or ", Dialogs.CrmDialog.AttachmentActionPhrases)}."));
                             }
                         }
-                        //TODO
-                        return message.CreateReply($"TODO Luis.");
-                        //return await Conversation.SendAsync(message, () => new Dialogs.CrmDialog(message.Conversation.Id));
+                        else
+                        {
+                            await Conversation.SendAsync(message, () => new Dialogs.CrmDialog(message.Conversation.Id));
+                        }
                     }
                 }
                 else
                 {
-                    return HandleSystemMessage(message);
+                    HandleSystemMessage(message);
                 }
             }
             catch (Exception ex)
             {
-                return message.CreateReply($"Kabloooey! Well played human you just fried my circuits. Thanks for being patient, I'm still learning to do some things while in preview. Hopefully, I'll get this worked out soon. Here's your prize: {ex.Message}");
+                await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Kabloooey! Well played human you just fried my circuits. Thanks for being patient, I'm still learning to do some things while in preview. Hopefully, I'll get this worked out soon. Here's your prize: {ex.Message}"));
             }
-            */
+            return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
         }
 
         private static Activity HandleSystemMessage(Activity message)
         {
+            //MODEBUG TOOD
             if (message.Type.ToLower() == "botaddedtoconversation")
             {
                 return message.CreateReply($"Hello {message.From?.Name}! To get started say something like {Dialogs.CrmDialog.BuildCommandList(CRMBot.Dialogs.CrmDialog.WelcomePhrases)}.");
