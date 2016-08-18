@@ -51,7 +51,8 @@ namespace CRMBot
             Activity reply = message.CreateReply();
             reply.Type = ActivityTypes.Typing;
             reply.Text = null;
-            await connector.Conversations.ReplyToActivityAsync(reply); try
+            await connector.Conversations.ReplyToActivityAsync(reply);
+            try
             {
                 if (message.Type == ActivityTypes.Message)
                 {
