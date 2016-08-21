@@ -56,27 +56,7 @@ namespace CRMBot
             {
                 if (message.Type == ActivityTypes.Message)
                 {
-                    if (message.Text.ToLower() == "ping")
-                    {
-                        QueryExpression query = new QueryExpression("systemuser");
-                        query.PageInfo = new PagingInfo();
-                        query.PageInfo.Count = 1;
-                        query.PageInfo.PageNumber = 1;
-                        query.ColumnSet = new ColumnSet(new string[] { "systeuserid" });
-                        try
-                        {
-                            using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(message.Conversation.Id))
-                            {
-                                EntityCollection collection = serviceProxy.RetrieveMultiple(query);
-                                await connector.Conversations.ReplyToActivityAsync(message.CreateReply("true"));
-                            }
-                        }
-                        catch
-                        {
-                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply("false"));
-                        }
-                    }
-                    else if (message.Text.ToLower().StartsWith("bot1") || message.Text.ToLower().StartsWith("bot0"))
+                    if (message.Text.ToLower().StartsWith("bot1") || message.Text.ToLower().StartsWith("bot0"))
                     {
                         QueryExpression query = new QueryExpression("cobalt_crmorganization");
                         query.Criteria.AddCondition("cobalt_registrationcode", ConditionOperator.Equal, message.Text);
@@ -186,7 +166,8 @@ namespace CRMBot
                 }
                 else
                 {
-                    HandleSystemMessage(message);
+                    Activity systemReply = HandleSystemMessage(message, connector);
+                    await connector.Conversations.ReplyToActivityAsync(systemReply);
                 }
             }
             catch (Exception ex)
@@ -196,18 +177,24 @@ namespace CRMBot
             return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
         }
 
-        private static Activity HandleSystemMessage(Activity message)
+        public static Activity HandleSystemMessage(Activity message, ConnectorClient connector)
         {
-            //MODEBUG TOOD
-            if (message.Type.ToLower() == "botaddedtoconversation")
+            if (message.Type == ActivityTypes.Ping)
             {
-                return message.CreateReply($"Hello {message.From?.Name}! To get started say something like {Dialogs.CrmDialog.BuildCommandList(CRMBot.Dialogs.CrmDialog.WelcomePhrases)}.");
+                QueryExpression query = new QueryExpression("systemuser");
+                query.PageInfo = new PagingInfo();
+                query.PageInfo.Count = 1;
+                query.PageInfo.PageNumber = 1;
+                query.ColumnSet = new ColumnSet(new string[] { "systeuserid" });
+                using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(Guid.Empty.ToString()))
+                {
+                    EntityCollection collection = serviceProxy.RetrieveMultiple(query);
+                    Activity ping = message.CreateReply();
+                    ping.Type = ActivityTypes.Ping;
+                    ping.Text = null;
+                    return ping;
+                }
             }
-            else if (message.Type.ToLower() == "botremovedfromconversation")
-            {
-                return message.CreateReply($"See ya {message.From?.Name}!");
-            }
-
             return null;
         }
         /// <summary>

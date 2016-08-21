@@ -66,7 +66,7 @@ namespace CRMBot.Dialogs
         public static string defaultMessage = $"Sorry, I didn't understand that. Try saying {CrmDialog.BuildCommandList(CrmDialog.WelcomePhrases)}";
 
         public static string waitMessage = "Got it...Give me a second while I ";
-        public const int MAX_RECORDS_TO_SHOW = 10;
+        public const int MAX_RECORDS_TO_SHOW_PER_PAGE = 10;
 
         private string conversationId = string.Empty;
 
@@ -137,7 +137,7 @@ namespace CRMBot.Dialogs
                 if (displayField != null)
                 {
                     string att = CrmHelper.FindAttributeLogicalName(metadata, displayField.Entity);
-                    string displayValue = GetAttributeDisplayValue(att);
+                    string displayValue = GetAttributeDisplayValue(metadata, att);
                     if (!string.IsNullOrEmpty(displayValue))
                     {
                         await context.PostAsync($"{this.SelectedEntity[metadata.PrimaryNameAttribute]}'s {displayField.Entity} is {displayValue}");
@@ -220,6 +220,21 @@ namespace CRMBot.Dialogs
                 {
                     await context.PostAsync($"Hmmm. I couldn't select that record. Make sure the number is within the current range of selected records (i.e. 1 to {this.FilteredEntities.Length}).");
                 }
+            }
+            else if (result.Query.ToLower().StartsWith("next"))
+            {
+                this.CurrentPageIndex = this.CurrentPageIndex + 1;
+                string filteredEntitiesList = this.BuildFilteredEntitiesList();
+                await context.PostAsync($"{filteredEntitiesList}");
+            }
+            else if (result.Query.ToLower().StartsWith("back"))
+            {
+                if (this.CurrentPageIndex >= 0)
+                {
+                    this.CurrentPageIndex = this.CurrentPageIndex - 1;
+                }
+                string filteredEntitiesList = this.BuildFilteredEntitiesList();
+                await context.PostAsync($"{filteredEntitiesList}");
             }
             else if (result.Query.ToLower().StartsWith("help"))
             {
@@ -413,6 +428,7 @@ namespace CRMBot.Dialogs
             }
             else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
             {
+                this.CurrentPageIndex = 0;
                 string filteredEntitiesList = this.BuildFilteredEntitiesList();
                 await context.PostAsync($"I found {this.FilteredEntities.Length} {entityDisplayName} that match. To select one say a number below.\r\n{filteredEntitiesList}");
             }
@@ -436,6 +452,15 @@ namespace CRMBot.Dialogs
                 {
                     bool associatedEntities = false;
                     QueryExpression expression = new QueryExpression(entityType.Entity);
+
+                    /********************************************************************************************************
+                    //Winner winner bot shirt
+                    *********************************************************************************************************/
+                    expression.AddOrder("createdon", OrderType.Ascending);
+                    /********************************************************************************************************
+                    //Winner winner bot shirt
+                    *********************************************************************************************************/
+
                     expression.ColumnSet = new ColumnSet(new string[] { entityMetadata.PrimaryNameAttribute, entityMetadata.PrimaryIdAttribute });
                     //TODO make this smarter based on relationship metadata
                     if (this.SelectedEntity != null && this.SelectedEntity.LogicalName == "systemuser" && entityMetadata.Attributes.Any(a => a.LogicalName == "createdby"))
@@ -571,8 +596,15 @@ namespace CRMBot.Dialogs
             {
                 EntityMetadata entityMetadata = null;
                 List<string> columns = new List<string>();
-                for (int i = 0; i < this.FilteredEntities.Length && i < MAX_RECORDS_TO_SHOW; i++)
+                int start = 0;
+                if (this.CurrentPageIndex > 0)
                 {
+                    start = MAX_RECORDS_TO_SHOW_PER_PAGE * this.CurrentPageIndex;
+                }
+                bool hasMore = false;
+                for (int i = start; i < this.FilteredEntities.Length && i < start + MAX_RECORDS_TO_SHOW_PER_PAGE; i++)
+                {
+                    hasMore = this.FilteredEntities.Length > (i + 1);
                     if (entityMetadata == null)
                     {
                         entityMetadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.FilteredEntities[i].LogicalName);
@@ -610,7 +642,7 @@ namespace CRMBot.Dialogs
                     for (int j = 0; j < columns.Count; j++)
                     {
                         string column = columns[j];
-                        string displayValue = this.GetAttributeDisplayValue(this.FilteredEntities[i], column);
+                        string displayValue = this.GetAttributeDisplayValue(this.FilteredEntities[i], entityMetadata, column);
                         if (j == 1)
                         {
                             sb.Append("(");
@@ -629,7 +661,7 @@ namespace CRMBot.Dialogs
                         sb.Append(")");
                     }
                     sb.Append("\r\n");
-                    if (i == MAX_RECORDS_TO_SHOW - 1)
+                    if (hasMore)
                     {
                         sb.Append("...");
                     }
@@ -768,68 +800,38 @@ namespace CRMBot.Dialogs
             }
         }
 
-        protected string GetAttributeDisplayValue(Entity entity, string attributeName)
+        protected string GetAttributeDisplayValue(Entity entity, EntityMetadata metadata, string attributeName)
         {
-            if (entity != null && entity.Attributes != null && entity.Attributes.Contains(attributeName) && entity[attributeName] != null)
+            string att = CrmHelper.FindAttributeLogicalName(metadata, attributeName);
+            if (entity != null && entity.Attributes != null && entity.Attributes.Contains(att) && entity[att] != null)
             {
-                return entity[attributeName].ToString();
-            }
-            return string.Empty;
-            /*TODO
-            object att = this.SelectedEntity[attributeName];
-
-            string att = CrmHelper.FindAttribute(metadata, attributeName);
-
+                object attributeValue = entity[att];
                 AttributeMetadata attMetadata = metadata.Attributes.FirstOrDefault(a => a.LogicalName == att);
-                if (string.IsNullOrEmpty(att))
-                {
-                    att = metadata.PrimaryNameAttribute;
-                }
 
                 if (!string.IsNullOrEmpty(att))
                 {
-                    object value = null;
                     switch (attMetadata.AttributeType)
                     {
-                        case AttributeTypeCode.Integer:
-                        case AttributeTypeCode.BigInt:
-                            value = Int32.Parse(attributeValue.Entity);
-                            break;
-                        case AttributeTypeCode.Boolean:
-                            value = bool.Parse(attributeValue.Entity);
-                            break;
-                        case AttributeTypeCode.DateTime:
-                            value = DateTime.Parse(attributeValue.Entity);
-                            break;
-                        case AttributeTypeCode.Decimal:
+                        case AttributeTypeCode.Lookup:
+                            return ((EntityReference)attributeValue).Name;
                         case AttributeTypeCode.Money:
-                            value = Decimal.Parse(attributeValue.Entity);
-                            break;
-                        case AttributeTypeCode.Double:
-                            value = double.Parse(attributeValue.Entity);
-                            break;
-                        case AttributeTypeCode.Uniqueidentifier:
-                            value = Guid.Parse(attributeValue.Entity);
-                            break;
+                            return ((Money)attributeValue).Value.ToString("c");
                         case AttributeTypeCode.Picklist:
-                            value = new OptionSetValue()
-                            {
-                                Value = Int32.Parse(attributeValue.Entity)
-                            };
-                            break;
-                        default:
-                            value = attributeValue.Entity;
-                            break;
-                    }
-                    entity[att] = value;
-                }
-            }
-            */
+                        case AttributeTypeCode.Status:
+                        case AttributeTypeCode.State:
+                            return ((OptionSetValue)attributeValue).ToString();
 
+                        default:
+                            return attributeValue.ToString();
+                    }
+                }
+
+            }
+            return string.Empty;
         }
-        protected string GetAttributeDisplayValue(string attributeName)
+        protected string GetAttributeDisplayValue(EntityMetadata entityMetadata, string attributeName)
         {
-            return this.GetAttributeDisplayValue(this.SelectedEntity, attributeName);
+            return this.GetAttributeDisplayValue(this.SelectedEntity, entityMetadata, attributeName);
         }
         protected string RetrieveEntityDisplayName(EntityMetadata entityMetadata, bool showPlural)
         {
@@ -891,6 +893,23 @@ namespace CRMBot.Dialogs
                 ChatState.RetrieveChatState(this.conversationId).Set(ChatState.FilteredEntities, value);
             }
         }
+
+        protected int CurrentPageIndex
+        {
+            get
+            {
+                if (ChatState.RetrieveChatState(this.conversationId).Get(ChatState.CurrentPageIndex) == null)
+                {
+                    return 0;
+                }
+                return (int)ChatState.RetrieveChatState(this.conversationId).Get(ChatState.CurrentPageIndex);
+            }
+            set
+            {
+                ChatState.RetrieveChatState(this.conversationId).Set(ChatState.CurrentPageIndex, value);
+            }
+        }
+
         protected Entity SelectedEntity
         {
             get

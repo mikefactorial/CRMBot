@@ -28,6 +28,7 @@ namespace CRMBot
         public static string Attachments = "Attachments";
         public static string FilteredEntities = "FilteredEntities";
         public static string SelectedEntity = "SelectedEntity";
+        public static string CurrentPageIndex = "CurrentPageIndex";
 
         public ChatState(string conversationId)
         {
