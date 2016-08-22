@@ -135,6 +135,8 @@ namespace CRMBot
                         }
                         else
                         {
+                            //MODEBUG TODO oAuth flow
+
                             await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Hey there, I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization."));
                         }
                     }
@@ -194,6 +196,45 @@ namespace CRMBot
                     ping.Text = null;
                     return ping;
                 }
+            }
+            return null;
+        }
+
+        public static Activity DoSetup(Activity message, ConnectorClient connector)
+        {
+            ChatState chatState = ChatState.RetrieveChatState(message.Conversation.Id);
+            if (chatState.Lead == null)
+            {
+                chatState.Lead = new Microsoft.Xrm.Sdk.Entity("lead");
+            }
+            if (chatState.CrmOrganization == null)
+            {
+                chatState.CrmOrganization = new Microsoft.Xrm.Sdk.Entity("cobalt_crmorganization");
+            }
+            if (string.IsNullOrEmpty(chatState.UserFirstName) && chatState.SetupStage == AccountSetupStage.None)
+            {
+                chatState.SetupStage = chatState.SetupStage;
+                return message.CreateReply($"Hey there, I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to connect me to your CRM Organization. What would you like me to call you?");
+            }
+            else if ((chatState.Lead["firstname"] == null || string.IsNullOrEmpty(chatState.Lead["firstname"].ToString())) && chatState.SetupStage == AccountSetupStage.FirstName)
+            {
+                chatState.SetupStage = AccountSetupStage.OrgUrl;
+                chatState.Lead["firstname"] = message.Text;
+                chatState.UserFirstName = message.Text;
+                return message.CreateReply($"Thanks {message.Text}! Now enter your CRM orgaization URL (e.g. https://org.crm.dynamics.com)");
+            }
+            else if ((chatState.CrmOrganization["cobalt_organizationurl"] == null || string.IsNullOrEmpty(chatState.Lead["cobalt_organizationurl"].ToString())) && chatState.SetupStage == AccountSetupStage.OrgUrl)
+            {
+                //TODO MODEBUG Login dialog
+                chatState.SetupStage = AccountSetupStage.Credentials;
+                chatState.Lead["cobalt_organizationurl"] = message.Text;
+                return message.CreateReply($"Got it. Whenever you send me a message I will connect to {message.Text}! All that's left is to sign in to your CRM orgaization.");
+            }
+            else if ((chatState.CrmOrganization["cobalt_username"] == null || string.IsNullOrEmpty(chatState.Lead["cobalt_username"].ToString())) && chatState.SetupStage == AccountSetupStage.Credentials)
+            {
+                chatState.SetupStage = AccountSetupStage.Complete;
+                chatState.Lead["cobalt_organizationurl"] = message.Text;
+                return message.CreateReply($"Got it. Whenever you send me a message I will connect to {message.Text}! All that's left is to sign in to your CRM orgaization.");
             }
             return null;
         }

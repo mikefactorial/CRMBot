@@ -18,6 +18,14 @@ using System.ServiceModel.Description;
 
 namespace CRMBot
 {
+    public enum AccountSetupStage
+    {
+        None,
+        FirstName,
+        OrgUrl,
+        Credentials,
+        Complete
+    }
     public class ChatState
     {
         public Dictionary<string, object> Data = new Dictionary<string, object>();
@@ -25,6 +33,7 @@ namespace CRMBot
         private static double chatCacheDurationMinutes = 30.0000;
         private string conversationId = string.Empty;
         private object metadataLock = new object();
+        private AccountSetupStage setupStage = AccountSetupStage.None;
         public static string Attachments = "Attachments";
         public static string FilteredEntities = "FilteredEntities";
         public static string SelectedEntity = "SelectedEntity";
@@ -75,11 +84,12 @@ namespace CRMBot
                             EntityCollection collection = serviceProxy.RetrieveMultiple(query);
                             if (collection.Entities != null && collection.Entities.Count > 0 )
                             {
+                                ChatState state = new ChatState(message.Conversation.Id);
+                                state.CrmOrganization = collection.Entities[0];
                                 CacheItemPolicy policy = new CacheItemPolicy();
                                 policy.Priority = CacheItemPriority.Default;
                                 policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
 
-                                ChatState state = new ChatState(message.Conversation.Id);
                                 state.UserFirstName = "";
                                 if (collection.Entities[0].Contains("cobalt_organizationurl") && collection.Entities[0].Contains("cobalt_username") && collection.Entities[0].Contains("cobalt_encryptedpassword"))
                                 {
@@ -88,6 +98,7 @@ namespace CRMBot
                                         EntityReference leadRef = collection.Entities[0]["cobalt_leadid"] as EntityReference;
                                         if (leadRef != null)
                                         {
+                                            state.Lead = serviceProxy.Retrieve(leadRef.LogicalName, leadRef.Id, new ColumnSet(true));
                                             Microsoft.Xrm.Sdk.Entity lead = serviceProxy.Retrieve(leadRef.LogicalName, leadRef.Id, new ColumnSet(new string[] { "leadid", "firstname" }));
                                             if (lead.Contains("firstname"))
                                             {
@@ -147,6 +158,25 @@ namespace CRMBot
             return cryptedString;
         }
 
+        public Microsoft.Xrm.Sdk.Entity CrmOrganization
+        {
+            get; set;
+        }
+        public Microsoft.Xrm.Sdk.Entity Lead
+        {
+            get; set;
+        }
+        public AccountSetupStage SetupStage
+        {
+            get
+            {
+                return setupStage;
+            }
+            set
+            {
+                setupStage = value;
+            }
+        }
         public string OrganizationUrl
         {
             get; set;

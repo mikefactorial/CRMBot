@@ -66,7 +66,7 @@ namespace CRMBot.Dialogs
         public static string defaultMessage = $"Sorry, I didn't understand that. Try saying {CrmDialog.BuildCommandList(CrmDialog.WelcomePhrases)}";
 
         public static string waitMessage = "Got it...Give me a second while I ";
-        public const int MAX_RECORDS_TO_SHOW_PER_PAGE = 10;
+        public const int MAX_RECORDS_TO_SHOW_PER_PAGE = 5;
 
         private string conversationId = string.Empty;
 
@@ -461,7 +461,7 @@ namespace CRMBot.Dialogs
                     //Winner winner bot shirt
                     *********************************************************************************************************/
 
-                    expression.ColumnSet = new ColumnSet(new string[] { entityMetadata.PrimaryNameAttribute, entityMetadata.PrimaryIdAttribute });
+                    expression.ColumnSet = new ColumnSet(true);
                     //TODO make this smarter based on relationship metadata
                     if (this.SelectedEntity != null && this.SelectedEntity.LogicalName == "systemuser" && entityMetadata.Attributes.Any(a => a.LogicalName == "createdby"))
                     {
@@ -632,6 +632,11 @@ namespace CRMBot.Dialogs
                                             {
                                                 columns.Add(cell.Name);
                                             }
+                                            //Don't show more than 3 columns for brevity
+                                            if (columns.Count > 2)
+                                            {
+                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -661,10 +666,10 @@ namespace CRMBot.Dialogs
                         sb.Append(")");
                     }
                     sb.Append("\r\n");
-                    if (hasMore)
-                    {
-                        sb.Append("...");
-                    }
+                }
+                if (hasMore)
+                {
+                    sb.Append("...");
                 }
             }
 
@@ -810,19 +815,27 @@ namespace CRMBot.Dialogs
 
                 if (!string.IsNullOrEmpty(att))
                 {
-                    switch (attMetadata.AttributeType)
+                    if (attributeValue is EntityReference)
                     {
-                        case AttributeTypeCode.Lookup:
-                            return ((EntityReference)attributeValue).Name;
-                        case AttributeTypeCode.Money:
-                            return ((Money)attributeValue).Value.ToString("c");
-                        case AttributeTypeCode.Picklist:
-                        case AttributeTypeCode.Status:
-                        case AttributeTypeCode.State:
-                            return ((OptionSetValue)attributeValue).ToString();
-
-                        default:
-                            return attributeValue.ToString();
+                        return ((EntityReference)attributeValue).Name;
+                    }
+                    else if (attributeValue is Money)
+                    {
+                        return ((Money)attributeValue).Value.ToString("c");
+                    }
+                    else if (attributeValue is OptionSetValue)
+                    {
+                        int value = ((OptionSetValue)attributeValue).Value;
+                        OptionMetadata optMetadata = ((EnumAttributeMetadata)attMetadata).OptionSet.Options.FirstOrDefault(o => o.Value != null && o.Value.Value == value);
+                        if (optMetadata.Label != null && optMetadata.Label.UserLocalizedLabel != null && optMetadata.Label.UserLocalizedLabel != null)
+                        {
+                            return optMetadata.Label.UserLocalizedLabel.Label;
+                        }
+                        return string.Empty;
+                    }
+                    else
+                    {
+                        return attributeValue.ToString();
                     }
                 }
 
