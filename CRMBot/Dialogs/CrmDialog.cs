@@ -156,7 +156,7 @@ namespace CRMBot.Dialogs
             {
                 EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.FilteredEntities[0].LogicalName);
                 string displayName = RetrieveEntityDisplayName(metadata, true);
-                await context.PostAsync($"These are the currently selected {displayName} {this.BuildFilteredEntitiesList()}");
+                await context.PostAsync($"Hmmm...I couldn't find that record. These are the currently selected {displayName}\r\n{this.BuildFilteredEntitiesList()}");
             }
             else
             {
@@ -263,13 +263,6 @@ namespace CRMBot.Dialogs
                     await context.PostAsync($"Okay. We're done with that.");
                 }
             }
-            else if (result.Query.ToLower().StartsWith("goodbye") || result.Query.ToLower().StartsWith("bye"))
-            {
-                this.FilteredEntities = null;
-                this.Attachments = null;
-                this.SelectedEntity = null;
-                await context.PostAsync($"CRM you later {chatState.UserFirstName}...");
-            }
             else if (result.Query.ToLower().StartsWith("thank"))
             {
                 await context.PostAsync($"You're welcome {chatState.UserFirstName}!");
@@ -277,6 +270,11 @@ namespace CRMBot.Dialogs
             else if (result.Query.ToLower().StartsWith("say"))
             {
                 await context.PostAsync(result.Query.Substring(result.Query.ToLower().IndexOf("say") + 4));
+            }
+            else if (result.Query.ToLower().StartsWith("bye") || result.Query.ToLower().Contains("see ya") || result.Query.ToLower().Contains("bye") || result.Query.ToLower().Contains("later"))
+            {
+                ChatState.ClearChatState(conversationId);
+                await context.PostAsync($"CRM you later {chatState.UserFirstName}...");
             }
             else
             {
@@ -743,7 +741,7 @@ namespace CRMBot.Dialogs
                     }
                 }
             }
-            if (this.SelectedEntity == null)
+            else if (this.SelectedEntity == null)
             {
                 this.SelectedEntity = previouslySelectedEntity;
             }

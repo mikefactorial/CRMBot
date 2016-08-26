@@ -127,6 +127,10 @@ namespace CRMBot
         }
         public static void ClearChatState(string conversationId)
         {
+            if (MemoryCache.Default.Contains(conversationId))
+            {
+                MemoryCache.Default.Remove(conversationId);
+            }
         }
         public static ChatState RetrieveChatState(string conversationId)
         {

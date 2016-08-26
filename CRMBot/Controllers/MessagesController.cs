@@ -49,9 +49,12 @@ namespace CRMBot
             ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
 
             Activity reply = message.CreateReply();
-            reply.Type = ActivityTypes.Typing;
-            reply.Text = null;
-            await connector.Conversations.ReplyToActivityAsync(reply);
+            if (reply != null)
+            {
+                reply.Type = ActivityTypes.Typing;
+                reply.Text = null;
+                await connector.Conversations.ReplyToActivityAsync(reply);
+            }
             try
             {
                 if (message.Type == ActivityTypes.Message)
@@ -121,8 +124,9 @@ namespace CRMBot
                         {
                             await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization."));
                         }
-                        else if (message.Text.ToLower().Contains("goodbye"))
+                        else if (message.Text.ToLower().Contains("see ya") || message.Text.ToLower().Contains("bye") || message.Text.ToLower().Contains("later"))
                         {
+                            ChatState.ClearChatState(message.Conversation.Id);
                             await connector.Conversations.ReplyToActivityAsync(message.CreateReply("CRM you later..."));
                         }
                         else if (message.Text.ToLower().Contains("thank"))
@@ -136,7 +140,6 @@ namespace CRMBot
                         else
                         {
                             //MODEBUG TODO oAuth flow
-
                             await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Hey there, I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization."));
                         }
                     }
@@ -169,7 +172,10 @@ namespace CRMBot
                 else
                 {
                     Activity systemReply = HandleSystemMessage(message, connector);
-                    await connector.Conversations.ReplyToActivityAsync(systemReply);
+                    if (systemReply != null)
+                    {
+                        await connector.Conversations.ReplyToActivityAsync(systemReply);
+                    }
                 }
             }
             catch (Exception ex)
