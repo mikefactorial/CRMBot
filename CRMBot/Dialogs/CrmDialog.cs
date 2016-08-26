@@ -428,7 +428,6 @@ namespace CRMBot.Dialogs
             }
             else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
             {
-                this.CurrentPageIndex = 0;
                 string filteredEntitiesList = this.BuildFilteredEntitiesList();
                 await context.PostAsync($"I found {this.FilteredEntities.Length} {entityDisplayName} that match. To select one say a number below.\r\n{filteredEntitiesList}");
             }
@@ -669,7 +668,18 @@ namespace CRMBot.Dialogs
                 }
                 if (hasMore)
                 {
-                    sb.Append("...");
+                    if (start == 0)
+                    {
+                        sb.Append("...('next')");
+                    }
+                    else
+                    {
+                        sb.Append("('back')...('next')");
+                    }
+                }
+                else if(start > 0)
+                {
+                    sb.Append("('back')...");
                 }
             }
 
@@ -903,6 +913,7 @@ namespace CRMBot.Dialogs
             }
             set
             {
+                this.CurrentPageIndex = 0;
                 ChatState.RetrieveChatState(this.conversationId).Set(ChatState.FilteredEntities, value);
             }
         }

@@ -187,7 +187,7 @@ namespace CRMBot
                 query.PageInfo = new PagingInfo();
                 query.PageInfo.Count = 1;
                 query.PageInfo.PageNumber = 1;
-                query.ColumnSet = new ColumnSet(new string[] { "systeuserid" });
+                query.ColumnSet = new ColumnSet(new string[] { "systemuserid" });
                 using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(Guid.Empty.ToString()))
                 {
                     EntityCollection collection = serviceProxy.RetrieveMultiple(query);
