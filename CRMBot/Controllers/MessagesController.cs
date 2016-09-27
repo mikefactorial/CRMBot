@@ -23,12 +23,15 @@ using System.ServiceModel.Description;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Bot.Builder.Dialogs;
+using Microsoft.Bot.Builder.FormFlow;
+using CRMBot.Forms;
 
 namespace CRMBot
 {
     [BotAuthentication]
     public class MessagesController : ApiController
     {
+
         public async Task<HttpResponseMessage> Post([FromBody]Activity message)
         {
             /* Bot out of service message
@@ -99,7 +102,7 @@ namespace CRMBot
                                         }
                                         else
                                         {
-                                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hmmm... I found your registration but I couldn't connect to your CRM Organization. Make sure you've entered all information or try registering again at cobalt.net/BotRegistration"));
+                                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hmmm... I found your registration but I couldn't connect to your CRM Organization. Make sure you've entered all information or try registering again at [http://www.cobalt.net/botregistration](http://www.cobalt.net/botregistration)"));
                                         }
                                     }
                                     else
@@ -109,12 +112,12 @@ namespace CRMBot
                                 }
                                 else
                                 {
-                                    await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at cobalt.net/BotRegistration"));
+                                    await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at [http://www.cobalt.net/botregistration](http://www.cobalt.net/botregistration)"));
                                 }
                             }
                             else
                             {
-                                await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at cobalt.net/BotRegistration"));
+                                await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hmmm... I don't recognize that registration code. Make sure you sent the correct code and try again or try registering again at [http://www.cobalt.net/botregistration](http://www.cobalt.net/botregistration)"));
                             }
                         }
                     }
@@ -139,8 +142,8 @@ namespace CRMBot
                         }
                         else
                         {
-                            //MODEBUG TODO oAuth flow
-                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Hey there, I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization."));
+                            await Conversation.SendAsync(message, LeadForm.MakeRootDialog);
+                            //await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Hey there, I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization."));
                         }
                     }
                     else
@@ -180,7 +183,7 @@ namespace CRMBot
             }
             catch (Exception ex)
             {
-                await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Kabloooey! Well played human you just fried my circuits. Thanks for being patient, I'm still learning to do some things while in preview. Hopefully, I'll get this worked out soon. Here's your prize: {ex.Message}"));
+                await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Kabloooey! Well played human you just fried my circuits. Thanks for being patient, I'm still learning to do some things while in preview. Hopefully, I'll get this worked out soon. Here's your prize: {ex.ToString()}"));
             }
             return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
         }

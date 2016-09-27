@@ -46,9 +46,9 @@ namespace CRMBot
         public static bool SetChatState(Activity message)
         {
             bool returnValue = false;
-            //MODEBUG TODO
             if (message.ChannelId.ToString() != "facebook" && message.ChannelId.ToString() != "skype")
             {
+                /* Testing disabled
                 CacheItemPolicy policy = new CacheItemPolicy();
                 policy.Priority = CacheItemPriority.Default;
                 policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
@@ -60,6 +60,7 @@ namespace CRMBot
 
                 MemoryCache.Default.Add(message.Conversation.Id, state, policy);
                 returnValue = true;
+                */
             }
             else if (!MemoryCache.Default.Contains(message.Conversation.Id))
             {
