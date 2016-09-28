@@ -62,7 +62,11 @@ namespace CRMBot
             {
                 if (message.Type == ActivityTypes.Message)
                 {
-                    if (message.Text.ToLower().StartsWith("bot1") || message.Text.ToLower().StartsWith("bot0"))
+                    if ((message.Text.ToLower().StartsWith("hi ") || message.Text.ToLower().StartsWith("hello ")) && (message.Text.ToLower().Contains("emaline") || message.Text.ToLower().Contains("emmy")))
+                    {
+                        await Conversation.SendAsync(message, EmmyForm.MakeRootDialog);
+                    }
+                    else if (message.Text.ToLower().StartsWith("bot1") || message.Text.ToLower().StartsWith("bot0"))
                     {
                         QueryExpression query = new QueryExpression("cobalt_crmorganization");
                         query.Criteria.AddCondition("cobalt_registrationcode", ConditionOperator.Equal, message.Text);
@@ -158,6 +162,7 @@ namespace CRMBot
                                     attachments.Add(new System.Net.WebClient().DownloadData(attach.ContentUrl));
                                 }
                             }
+
                             Dialogs.CrmDialog dialog = new Dialogs.CrmDialog(message.Conversation.Id);
                             dialog.Attachments = attachments;
 
@@ -183,7 +188,7 @@ namespace CRMBot
             }
             catch (Exception ex)
             {
-                await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Kabloooey! Well played human you just fried my circuits. Thanks for being patient, I'm still learning to do some things while in preview. Hopefully, I'll get this worked out soon. Here's your prize: {ex.ToString()}"));
+                await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Kabloooey! Well played human you just fried my circuits. Thanks for being patient, I'm still learning to do some things while in preview. Hopefully, I'll get this worked out soon. Here's your prize: {ex.Message}"));
             }
             return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
         }

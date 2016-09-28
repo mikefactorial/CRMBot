@@ -13,8 +13,8 @@ namespace CRMBot.Forms
     {
         [Prompt("What's your {&}?")]
         public string Name;
-        [Prompt("Thanks! Just one more easy question. Are you a CRM Partner or a CRM User? {||}")]
-        public LeadType Type;
+        [Prompt("Nice to meet you {Name}! Just one more easy question. Are you a CRM Partner or a CRM User? {||}")]
+        public LeadType? Type;
         public static IForm<LeadForm> BuildForm()
         {
             OnCompletionAsyncDelegate<LeadForm> processLead = async (context, state) =>
@@ -28,11 +28,13 @@ namespace CRMBot.Forms
                     if (nameSplit.Length > 1) newLead["lastname"] = nameSplit[1];
                     newLead["cobalt_leadtype"] = new OptionSetValue() { Value = (state.Type == LeadType.Partner) ? 533470001 : 533470000 };
                     serviceProxy.Create(newLead);
-                    await context.PostAsync($"Thanks for saying Hi {nameSplit[0]}! If you’d like to connect me to your CRM Organization go [here](http://www.cobalt.net/botregistration).");
+                    await context.PostAsync($"Got it :) Thanks for saying Hi {newLead["firstname"]}! To register your CRM Organization go [here](http://www.cobalt.net/botregistration)");
                 }
             };
             return new FormBuilder<LeadForm>()
                     .Message("Hey there, I don't believe we've met.")
+                    .AddRemainingFields()
+                    .Confirm("No verification will be shown", state => false)
                     .OnCompletion(processLead)
                     .Build();
         }

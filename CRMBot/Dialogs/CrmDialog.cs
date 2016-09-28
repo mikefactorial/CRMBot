@@ -286,7 +286,7 @@ namespace CRMBot.Dialogs
                 {
                     await context.PostAsync($"Nothing much, just serving up some CRM data like it's my job.");
                 }
-                await context.PostAsync($"I'm here to help {chatState.UserFirstName}! To get started say something like {CrmDialog.BuildCommandList(CrmDialog.WelcomePhrases)}.");
+                await context.PostAsync($"To get started say something like {CrmDialog.BuildCommandList(CrmDialog.WelcomePhrases)}.");
             }
             context.Wait(MessageReceived);
         }

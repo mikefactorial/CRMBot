@@ -176,6 +176,7 @@
     <Compile Include="CrmHelper.cs" />
     <Compile Include="Dialogs\CrmDialog.cs" />
     <Compile Include="Dialogs\LuisResults.cs" />
+    <Compile Include="Forms\EmmyForm.cs" />
     <Compile Include="Forms\LeadForm.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
