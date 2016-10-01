@@ -23,7 +23,7 @@ namespace CRMBot.Forms
                 using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(Guid.Empty.ToString()))
                 {
                     Microsoft.Xrm.Sdk.Entity newLead = new Microsoft.Xrm.Sdk.Entity("lead");
-                    newLead["subject"] = "CRM Bot Registrant";
+                    newLead["subject"] = "CRMUG Summit 2016 Lead";
                     if (nameSplit.Length > 0) newLead["firstname"] = nameSplit[0];
                     if (nameSplit.Length > 1) newLead["lastname"] = nameSplit[1];
                     newLead["cobalt_leadtype"] = new OptionSetValue() { Value = (state.Type == LeadType.Partner) ? 533470001 : 533470000 };
@@ -40,7 +40,27 @@ namespace CRMBot.Forms
         }
         internal static IDialog<LeadForm> MakeRootDialog()
         {
-            return Chain.From(() => FormDialog.FromForm(LeadForm.BuildForm));
+            return Chain.From(() => FormDialog.FromForm(LeadForm.BuildForm))
+                .Do(async (context, order) =>
+                {
+                    try
+                    {
+                        var completed = await order;
+                    }
+                    catch (FormCanceledException<LeadForm> e)
+                    {
+                        string reply;
+                        if (e.InnerException == null)
+                        {
+                            reply = $"Okay we're done with that for now";
+                        }
+                        else
+                        {
+                            reply = "Sorry, I've had a short circuit.  Please try again.";
+                        }
+                        await context.PostAsync(reply);
+                    }
+                });
         }
     }
 }

@@ -35,7 +35,27 @@ namespace CRMBot.Forms
         }
         internal static IDialog<EmmyForm> MakeRootDialog()
         {
-            return Chain.From(() => FormDialog.FromForm(EmmyForm.BuildForm));
+            return Chain.From(() => FormDialog.FromForm(EmmyForm.BuildForm))
+                .Do(async (context, order) =>
+                {
+                    try
+                    {
+                        var completed = await order;
+                    }
+                    catch (FormCanceledException<LeadForm> e)
+                    {
+                        string reply;
+                        if (e.InnerException == null)
+                        {
+                            reply = $"Okay we're done with that for now";
+                        }
+                        else
+                        {
+                            reply = "Sorry, I've had a short circuit.  Please try again.";
+                        }
+                        await context.PostAsync(reply);
+                    }
+                });
         }
     }
 }

@@ -48,7 +48,6 @@ namespace CRMBot
             bool returnValue = false;
             if (message.ChannelId.ToString() != "facebook" && message.ChannelId.ToString() != "skype")
             {
-                /* Testing disabled
                 CacheItemPolicy policy = new CacheItemPolicy();
                 policy.Priority = CacheItemPriority.Default;
                 policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
@@ -60,7 +59,6 @@ namespace CRMBot
 
                 MemoryCache.Default.Add(message.Conversation.Id, state, policy);
                 returnValue = true;
-                */
             }
             else if (!MemoryCache.Default.Contains(message.Conversation.Id))
             {
