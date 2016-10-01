@@ -146,8 +146,8 @@ namespace CRMBot
                         }
                         else
                         {
-                            //await Conversation.SendAsync(message, LeadForm.MakeRootDialog);
-                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Hey there, I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization."));
+                            await Conversation.SendAsync(message, LeadForm.MakeRootDialog);
+                            //await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Hey there, I don't believe we've met. Unfortunately, I can't talk to strangers. Before we can work together you'll need to go [here](http://www.cobalt.net/botregistration) to connect me to your CRM organization."));
                         }
                     }
                     else

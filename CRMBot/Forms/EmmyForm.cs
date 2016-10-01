@@ -10,6 +10,15 @@ namespace CRMBot.Forms
     [Serializable]
     public class EmmyForm
     {
+        [Prompt("how are you feling? knock knock")]
+        public string HowAreYouFeeling;
+
+        [Prompt("tomato tomato squosh")]
+        public string WhosThere;
+
+        [Prompt("tomato squosh")]
+        public string TomatoWho;
+
         [Prompt("I missed you. How are you?")]
         public string HowAreYou;
         [Prompt(":) I had a pretty good day today. Your Dad taught me to talk to you. How was your day?")]
