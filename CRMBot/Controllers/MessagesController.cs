@@ -49,19 +49,20 @@ namespace CRMBot
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
             */
+            MicrosoftAppCredentials.TrustServiceUrl(message.ServiceUrl, DateTime.MaxValue);
             ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
-
-            Activity reply = message.CreateReply();
-            if (reply != null)
-            {
-                reply.Type = ActivityTypes.Typing;
-                reply.Text = null;
-                await connector.Conversations.ReplyToActivityAsync(reply);
-            }
             try
             {
                 if (message.Type == ActivityTypes.Message)
                 {
+                    Activity reply = message.CreateReply();
+                    if (reply != null)
+                    {
+                        reply.Type = ActivityTypes.Typing;
+                        reply.Text = null;
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
                     if ((message.Text.ToLower().StartsWith("hi ") || message.Text.ToLower().StartsWith("hello ")) && (message.Text.ToLower().Contains("emaline") || message.Text.ToLower().Contains("emmy")))
                     {
                         await Conversation.SendAsync(message, EmmyForm.MakeRootDialog);
@@ -197,6 +198,7 @@ namespace CRMBot
         {
             if (message.Type == ActivityTypes.Ping)
             {
+                /*
                 QueryExpression query = new QueryExpression("systemuser");
                 query.PageInfo = new PagingInfo();
                 query.PageInfo.Count = 1;
@@ -210,6 +212,7 @@ namespace CRMBot
                     ping.Text = null;
                     return ping;
                 }
+                */
             }
             return null;
         }
