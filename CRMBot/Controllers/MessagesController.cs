@@ -31,7 +31,7 @@ namespace CRMBot
     [BotAuthentication]
     public class MessagesController : ApiController
     {
-
+        [ResponseType(typeof(void))]
         public async Task<HttpResponseMessage> Post([FromBody]Activity message)
         {
             /* Bot out of service message
