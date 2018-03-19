@@ -6,6 +6,7 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
+using Microsoft.Xrm.Sdk.WebServiceClient;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -17,7 +18,7 @@ using System.Web;
 namespace CRMBot.Dialogs
 {
     //[LuisModel("cc421661-4803-4359-b19b-35a8bae3b466", "70c9f99320804782866c3eba387d54bf")]
-    [LuisModel("64c400cf-b36d-4874-bd01-1c7567e57d8a", "1d8d05db65364c67a7bf15a4bf855f03")]
+    [LuisModel("64c400cf-b36d-4874-bd01-1c7567e57d8a", "a03f8796d25a493dac9ff9e8ad2b15a6")]
     [Serializable]
     public class CrmDialog : LuisDialog<object>
     {
@@ -106,7 +107,7 @@ namespace CRMBot.Dialogs
                 {
                     entity["subject"] = subject;
                 }
-                using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
+                using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                 {
                     serviceProxy.Create(entity);
                 }
@@ -330,7 +331,7 @@ namespace CRMBot.Dialogs
                     if (!string.IsNullOrEmpty(att))
                     {
                         this.SelectedEntity[att] = attributeValue.Entity;
-                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
+                        using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                         {
                             serviceProxy.Update(this.SelectedEntity);
                             await context.PostAsync($"I've update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record with the new {attributeName.Entity} {attributeValue.Entity}");
@@ -398,7 +399,7 @@ namespace CRMBot.Dialogs
                             entity["customerid"] = new EntityReference(this.SelectedEntity.LogicalName, this.SelectedEntity.Id);
                         }
                     }
-                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
+                    using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                     {
                         Guid id = serviceProxy.Create(entity);
                         this.SelectedEntity = serviceProxy.Retrieve(entity.LogicalName, id, new ColumnSet(true));
@@ -514,7 +515,7 @@ namespace CRMBot.Dialogs
                             }
                         }
                     }
-                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
+                    using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                     {
                         EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
                         if (collection.Entities != null)
@@ -578,7 +579,7 @@ namespace CRMBot.Dialogs
                     annotation["mimetype"] = "application /octet-stream";
                     annotation["documentbody"] = encodedData;
 
-                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
+                    using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                     {
                         serviceProxy.Create(annotation);
                         await context.PostAsync($"Okay. I've attached the file to {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} as a note with the Subject '{annotation["subject"]}'");
@@ -614,7 +615,7 @@ namespace CRMBot.Dialogs
                     {
                         entityMetadata = CrmHelper.RetrieveEntityMetadata(this.conversationId, this.FilteredEntities[i].LogicalName);
 
-                        using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
+                        using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                         {
                             columns.Add(entityMetadata.PrimaryNameAttribute);
                             QueryExpression expression = new QueryExpression("savedquery");
@@ -716,7 +717,7 @@ namespace CRMBot.Dialogs
                     EntityRecommendation attributeName = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeName);
                     EntityRecommendation attributeValue = result.RetrieveEntity(this.conversationId, EntityTypeNames.AttributeValue);
 
-                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
+                    using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.conversationId))
                     {
                         QueryExpression expression = new QueryExpression(entityType);
                         expression.ColumnSet = new ColumnSet(true);

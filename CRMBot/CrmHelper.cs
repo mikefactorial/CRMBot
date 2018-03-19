@@ -1,8 +1,10 @@
 ﻿using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
+using Microsoft.Xrm.Sdk.Discovery;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
+using Microsoft.Xrm.Sdk.WebServiceClient;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -19,7 +21,6 @@ namespace CRMBot
     {
         private const int MIN_TEXTLENGTHFORFIELDSEARCH = 4;
         private const int MIN_TEXTLENGTHFORENTITYSEARCH = 4;
-        private static Entity defaultSettings = null;
 
         public static string FindEntityLogicalName(string conversationId, string text)
         {
@@ -261,65 +262,28 @@ namespace CRMBot
 
             return string.Empty;
         }
-
-        public static Entity DefaultSettings
-        {
-            get
-            {
-                if (defaultSettings == null)
-                {
-                    QueryExpression query = new QueryExpression("cobalt_settings");
-                    query.ColumnSet = new ColumnSet(new string[] { "cobalt_settingsid", "cobalt_organizationdeskey" });
-                    query.PageInfo = new PagingInfo()
-                    {
-                        PageNumber = 1,
-                        Count = 1
-                    };
-
-                    using (OrganizationServiceProxy serviceProxy = CrmHelper.CreateOrganizationService(Guid.Empty.ToString()))
-                    {
-                        EntityCollection collection = serviceProxy.RetrieveMultiple(query);
-                        if (collection.Entities != null && collection.Entities.Count == 1)
-                        {
-                            defaultSettings = collection.Entities[0];
-                        }
-                    }
-                }
-
-                return defaultSettings;
-            }
-        }
         public static EntityMetadata RetrieveEntityMetadata(string conversationId, string entityLogicalName)
         {
             return ChatState.RetrieveChatState(conversationId).Metadata.FirstOrDefault(e => e.LogicalName == entityLogicalName);
         }
-        public static OrganizationServiceProxy CreateOrganizationService(string conversationId)
+
+        public static OrganizationWebProxyClient CreateOrganizationService(string conversationId)
         {
-            Uri oUri;
-            ClientCredentials clientCredentials = new ClientCredentials();
             if (conversationId != Guid.Empty.ToString())
             {
                 ChatState state = ChatState.RetrieveChatState(conversationId);
-                oUri = new Uri(state.OrganizationServiceUrl);
-                clientCredentials.UserName.UserName = state.UserName;
-                clientCredentials.UserName.Password = state.Password;
-                clientCredentials.Windows.ClientCredential = new System.Net.NetworkCredential(state.UserName, state.Password);
+                //Create your Organization Service Proxy  
+                OrganizationWebProxyClient service =  new OrganizationWebProxyClient(
+                    new Uri(state.OrganizationUrl + @"/xrmservices/2011/organization.svc/web?SdkClientVersion=8.2"),
+                    false);
+                service.HeaderToken = state.AccessToken;
+                return service;
             }
             else
             {
-                oUri = new Uri(ConfigurationManager.AppSettings["OrganizationServiceUrl"]);
-                clientCredentials.UserName.UserName = ConfigurationManager.AppSettings["UserName"];
-                clientCredentials.UserName.Password = ConfigurationManager.AppSettings["Password"];
-                clientCredentials.Windows.ClientCredential = new System.Net.NetworkCredential(ConfigurationManager.AppSettings["UserName"], ConfigurationManager.AppSettings["Password"]);
+                throw new Exception("Cannot connect to the organization");
             }
-            //Create your Organization Service Proxy  
-            return new OrganizationServiceProxy(
-                oUri,
-                null,
-                clientCredentials,
-                null);
 
         }
-
     }
 }
