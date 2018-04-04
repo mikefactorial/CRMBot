@@ -24,7 +24,7 @@ namespace CRMBot
     public class ChatState
     {
         public Dictionary<string, object> Data = new Dictionary<string, object>();
-        private EntityMetadata[] metadata = null;
+        private Dictionary<string, EntityMetadata> metadata = null;
         private static double chatCacheDurationMinutes = 30.0000;
         private string conversationId = string.Empty;
         private object metadataLock = new object();
@@ -99,7 +99,35 @@ namespace CRMBot
                 return "Friend";
             }
         }
-        public EntityMetadata[] Metadata
+        public EntityMetadata RetrieveEntityMetadata(string entityLogicalName)
+        {
+            EntityMetadata entity = this.Metadata.FirstOrDefault(e => e.LogicalName == entityLogicalName);
+            if (entity != null)
+            {
+                if (entity.Attributes == null || entity.Attributes.Length == 0)
+                {
+                    RetrieveEntityRequest request = new RetrieveEntityRequest();
+                    request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.All;
+                    request.LogicalName = entityLogicalName;
+                    RetrieveEntityResponse response;
+                    using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(conversationId))
+                    {
+                        response = (RetrieveEntityResponse)service.Execute(request);
+                        if (response != null)
+                        {
+                            this.metadata[entityLogicalName] = response.EntityMetadata;
+                            entity = this.Metadata.FirstOrDefault(e => e.LogicalName == entityLogicalName);
+                        }
+                    }
+                }
+            }
+            return entity;
+        }
+        public EntityMetadata[] RetrieveMetadata()
+        {
+            return this.Metadata;
+        }
+        private EntityMetadata[] Metadata
         {
             get
             {
@@ -110,18 +138,22 @@ namespace CRMBot
                         if (metadata == null)
                         {
                             RetrieveAllEntitiesRequest request = new RetrieveAllEntitiesRequest();
-                            request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.All;
+                            request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.Entity;
                             RetrieveAllEntitiesResponse response;
                             using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(conversationId))
                             {
                                 response = (RetrieveAllEntitiesResponse)service.Execute(request);
                             }
 
-                            this.metadata = response.EntityMetadata;
+                            this.metadata = new Dictionary<string, EntityMetadata>();
+                            foreach (EntityMetadata metadata in response.EntityMetadata)
+                            {
+                                this.metadata.Add(metadata.LogicalName, metadata);
+                            }
                         }
                     }
                 }
-                return metadata;
+                return metadata.Values.ToArray();
             }
         }
         public void Set(string key, object data)

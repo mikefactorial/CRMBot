@@ -24,7 +24,7 @@ namespace CRMBot
 
         public static string FindEntityLogicalName(string conversationId, string text)
         {
-            EntityMetadata[] metadata = ChatState.RetrieveChatState(conversationId).Metadata;
+            EntityMetadata[] metadata = ChatState.RetrieveChatState(conversationId).RetrieveMetadata();
             string subText = text.ToLower();
 
             //Equals
@@ -264,7 +264,7 @@ namespace CRMBot
         }
         public static EntityMetadata RetrieveEntityMetadata(string conversationId, string entityLogicalName)
         {
-            return ChatState.RetrieveChatState(conversationId).Metadata.FirstOrDefault(e => e.LogicalName == entityLogicalName);
+            return ChatState.RetrieveChatState(conversationId).RetrieveEntityMetadata(entityLogicalName);
         }
 
         public static OrganizationWebProxyClient CreateOrganizationService(string conversationId)

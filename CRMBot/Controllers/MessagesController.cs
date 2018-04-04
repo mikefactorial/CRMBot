@@ -70,7 +70,7 @@ namespace CRMBot
                         {
                             await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hi there, before we can work together you need to tell me your Dynamics 365 URL (e.g. https://contoso.crm.dynamics.com)"));
                         }
-                        else if (string.IsNullOrEmpty(state.AccessToken))
+                        else if (string.IsNullOrEmpty(state.AccessToken) || message.Text.StartsWith("http"))
                         {
                             if (message.Text.StartsWith("http"))
                             {
