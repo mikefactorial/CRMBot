@@ -1,4 +1,5 @@
-﻿using Microsoft.Xrm.Sdk;
+﻿using Microsoft.Bot.Connector;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Discovery;
 using Microsoft.Xrm.Sdk.Messages;
@@ -22,9 +23,9 @@ namespace CRMBot
         private const int MIN_TEXTLENGTHFORFIELDSEARCH = 4;
         private const int MIN_TEXTLENGTHFORENTITYSEARCH = 4;
 
-        public static string FindEntityLogicalName(string conversationId, string text)
+        public static string FindEntityLogicalName(string channelId, string userId, string text)
         {
-            EntityMetadata[] metadata = ChatState.RetrieveChatState(conversationId).RetrieveMetadata();
+            EntityMetadata[] metadata = ChatState.RetrieveChatState(channelId, userId).RetrieveMetadata();
             string subText = text.ToLower();
 
             //Equals
@@ -262,16 +263,16 @@ namespace CRMBot
 
             return string.Empty;
         }
-        public static EntityMetadata RetrieveEntityMetadata(string conversationId, string entityLogicalName)
+        public static EntityMetadata RetrieveEntityMetadata(string channelId, string userId, string entityLogicalName)
         {
-            return ChatState.RetrieveChatState(conversationId).RetrieveEntityMetadata(entityLogicalName);
+            return ChatState.RetrieveChatState(channelId, userId).RetrieveEntityMetadata(entityLogicalName);
         }
 
-        public static OrganizationWebProxyClient CreateOrganizationService(string conversationId)
+        public static OrganizationWebProxyClient CreateOrganizationService(string channelId, string userId)
         {
-            if (conversationId != Guid.Empty.ToString())
+            if (!string.IsNullOrEmpty(channelId) && !string.IsNullOrEmpty(userId))
             {
-                ChatState state = ChatState.RetrieveChatState(conversationId);
+                ChatState state = ChatState.RetrieveChatState(channelId, userId);
                 //Create your Organization Service Proxy  
                 OrganizationWebProxyClient service =  new OrganizationWebProxyClient(
                     new Uri(state.OrganizationUrl + @"/xrmservices/2011/organization.svc/web?SdkClientVersion=8.2"),
@@ -283,7 +284,6 @@ namespace CRMBot
             {
                 throw new Exception("Cannot connect to the organization");
             }
-
         }
     }
 }

@@ -16,15 +16,16 @@ namespace CRMBot
         {
             return View();
         }
-        public ActionResult Login(string convId)
+        public ActionResult Login(string channelId, string userId, string extraQueryParams)
         {
             // CRM Url
-            Session["currentConversation"] = convId;
-            ChatState state = ChatState.RetrieveChatState(Session["currentConversation"].ToString());
+            Session["channelId"] = channelId;
+            Session["userId"] = userId;
+            ChatState state = ChatState.RetrieveChatState(Session["channelId"].ToString(), Session["userId"].ToString());
 
             AuthenticationContext authContext = new AuthenticationContext(ConfigurationManager.AppSettings["CrmAuthority"]);
             var authUri = authContext.GetAuthorizationRequestUrlAsync(state.OrganizationUrl, ConfigurationManager.AppSettings["CrmClientId"],
-            new Uri(ConfigurationManager.AppSettings["CrmRedirectUrl"]), UserIdentifier.AnyUser, null);
+            new Uri(ConfigurationManager.AppSettings["CrmRedirectUrl"]), UserIdentifier.AnyUser, extraQueryParams);
             return Redirect(authUri.Result.ToString());
         }
 
@@ -39,10 +40,10 @@ namespace CRMBot
             // Saving token in Bot State
             var botCredentials = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"],
             ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
-            ChatState state = ChatState.RetrieveChatState(Session["currentConversation"].ToString());
+            ChatState state = ChatState.RetrieveChatState(Session["channelId"].ToString(), Session["userId"].ToString());
             state.AccessToken = authResult.Result.AccessToken;
 
-            ViewBag.Message = "Your Token -" + authResult.Result.AccessToken + " Conv Id - " + Session["currentConversation"].ToString();
+            ViewBag.Message = $"Your Token - {authResult.Result.AccessToken} Channel Id - {Session["channelId"].ToString()} User Id - {Session["userId"].ToString()}";
             return View();
         }
 

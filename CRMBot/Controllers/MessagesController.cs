@@ -26,6 +26,7 @@ using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.FormFlow;
 using CRMBot.Forms;
 using System.Web;
+using System.Text.RegularExpressions;
 
 namespace CRMBot
 {
@@ -64,17 +65,18 @@ namespace CRMBot
                     }
                     else
                     {
-                        ChatState state = ChatState.RetrieveChatState(message.Conversation.Id);
+                        ChatState state = ChatState.RetrieveChatState(message.ChannelId, message.From.Id);
 
-                        if (string.IsNullOrEmpty(state.OrganizationUrl) && !message.Text.ToLower().StartsWith("http"))
+                        if (string.IsNullOrEmpty(state.OrganizationUrl) && ParseCrmUrl(message.Text) == string.Empty)
                         {
                             await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hi there, before we can work together you need to tell me your Dynamics 365 URL (e.g. https://contoso.crm.dynamics.com)"));
                         }
-                        else if (string.IsNullOrEmpty(state.AccessToken) || message.Text.StartsWith("http"))
+                        else if (string.IsNullOrEmpty(state.AccessToken) || ParseCrmUrl(message.Text) != string.Empty)
                         {
-                            if (message.Text.StartsWith("http"))
+                            string extraQueryParams = string.Empty;
+                            if (ParseCrmUrl(message.Text) != string.Empty)
                             {
-                                state.OrganizationUrl = message.Text;
+                                state.OrganizationUrl = ParseCrmUrl(message.Text);
                             }
 
                             Activity replyToConversation = message.CreateReply();
@@ -87,7 +89,7 @@ namespace CRMBot
                             {
                                 // ASP.NET Web Application Hosted in Azure
                                 // Pass the user id
-                                Value = "https://crminator.azurewebsites.net/Home/Login?convId=" + HttpUtility.UrlEncode(message.Conversation.Id),
+                                Value = $"https://crminator.azurewebsites.net/Home/Login?channelId={HttpUtility.UrlEncode(message.ChannelId)}&userId={HttpUtility.UrlEncode(message.From.Id)}&extraQueryParams={extraQueryParams}",
                                 Type = "signin",
                                 Title = "Connect"
                             };
@@ -112,7 +114,7 @@ namespace CRMBot
                                     }
                                 }
 
-                                Dialogs.CrmDialog dialog = new Dialogs.CrmDialog(message.Conversation.Id);
+                                Dialogs.CrmDialog dialog = new Dialogs.CrmDialog(message);
                                 dialog.Attachments = attachments;
 
                                 if (string.IsNullOrEmpty(message.Text))
@@ -123,7 +125,7 @@ namespace CRMBot
                             else
                             {
                                 await connector.Conversations.ReplyToActivityAsync(CreateTypingMessage(message));
-                                await Conversation.SendAsync(message, () => new CRMBot.Dialogs.CrmDialog(message.Conversation.Id));
+                                await Conversation.SendAsync(message, () => new CRMBot.Dialogs.CrmDialog(message));
                             }
                         }
                     }
@@ -144,6 +146,21 @@ namespace CRMBot
             return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
         }
 
+        public string ParseCrmUrl(string text)
+        {
+            var regex = new Regex("<a [^>]*href=(?:'(?<href>.*?)')|(?:\"(?<href>.*?)\")", RegexOptions.IgnoreCase);
+            var urls = regex.Matches(text).OfType<Match>().Select(m => m.Groups["href"].Value).ToList();
+            if (urls.Count > 0)
+            {
+                return urls[0];
+            }
+            else if (text.ToLower().StartsWith("http") && text.ToLower().Contains(".dynamics.com"))
+            {
+                return text;
+            }
+            return string.Empty;
+
+        }
         public static Activity CreateTypingMessage(Activity message)
         {
             Activity reply = message.CreateReply();
