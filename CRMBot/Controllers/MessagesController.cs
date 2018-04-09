@@ -66,13 +66,14 @@ namespace CRMBot
                     {
                         ChatState state = ChatState.RetrieveChatState(message.ChannelId, message.From.Id);
 
-                        if (string.IsNullOrEmpty(state.OrganizationUrl) && !message.Text.ToLower().StartsWith("http"))
+                        if (string.IsNullOrEmpty(state.OrganizationUrl) && ParseCrmUrl(message.Text) == string.Empty)
                         {
                             await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hi there, before we can work together you need to tell me your Dynamics 365 URL (e.g. https://contoso.crm.dynamics.com)"));
                         }
                         else if (string.IsNullOrEmpty(state.AccessToken) || ParseCrmUrl(message.Text) != string.Empty)
                         {
-                            if (message.Text.StartsWith("http"))
+                            string extraQueryParams = string.Empty;
+                            if (ParseCrmUrl(message.Text) != string.Empty)
                             {
                                 state.OrganizationUrl = ParseCrmUrl(message.Text);
                             }

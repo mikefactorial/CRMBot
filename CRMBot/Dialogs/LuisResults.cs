@@ -1,4 +1,5 @@
 ﻿using Microsoft.Bot.Builder.Luis.Models;
+using Microsoft.Bot.Connector;
 using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.Collections.Generic;
@@ -27,7 +28,7 @@ namespace CRMBot.Dialogs
 
     public static class LuisResultExtensions
     {
-        public static EntityRecommendation RetrieveEntity(this LuisResult result, string conversationId, EntityTypeNames entityType)
+        public static EntityRecommendation RetrieveEntity(this LuisResult result, string channelId, string userId, EntityTypeNames entityType)
         {
             double? max = -1.00;
             EntityRecommendation bestEntity = null;
@@ -55,7 +56,7 @@ namespace CRMBot.Dialogs
                 }
                 else if (bestEntity.Type == EntityTypeNames.EntityType.EntityTypeName)
                 {
-                    bestEntity.Entity = CrmHelper.FindEntityLogicalName(conversationId, bestEntity.Entity);
+                    bestEntity.Entity = CrmHelper.FindEntityLogicalName(channelId, userId, bestEntity.Entity);
                 }
                 if (bestEntity.Type.Contains(":"))
                 {

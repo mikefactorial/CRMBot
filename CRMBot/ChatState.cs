@@ -26,7 +26,8 @@ namespace CRMBot
         public Dictionary<string, object> Data = new Dictionary<string, object>();
         private Dictionary<string, EntityMetadata> metadata = null;
         private static double chatCacheDurationMinutes = 30.0000;
-        private string conversationId = string.Empty;
+        private string channelId = string.Empty;
+        private string userId = string.Empty;
         private object metadataLock = new object();
         private Microsoft.Xrm.Sdk.Entity userEntity = null;
         public static string Attachments = "Attachments";
@@ -34,9 +35,10 @@ namespace CRMBot
         public static string SelectedEntity = "SelectedEntity";
         public static string CurrentPageIndex = "CurrentPageIndex";
 
-        protected ChatState(string conversationId)
+        protected ChatState(string channelId, string userId)
         {
-            this.conversationId = conversationId;
+            this.channelId = channelId;
+            this.userId = userId;
         }
         public static bool IsChatStateSet(Activity message)
         {
@@ -49,24 +51,24 @@ namespace CRMBot
                 return true;
             }
         }
-        public static void ClearChatState(string conversationId)
+        public static void ClearChatState(string channelId, string userId)
         {
-            if (MemoryCache.Default.Contains(conversationId))
+            if (MemoryCache.Default.Contains(channelId + userId))
             {
-                MemoryCache.Default.Remove(conversationId);
+                MemoryCache.Default.Remove(channelId + userId);
             }
         }
-        public static ChatState RetrieveChatState(string conversationId)
+        public static ChatState RetrieveChatState(string channelId, string userId)
         {
-            if (!MemoryCache.Default.Contains(conversationId))
+            if (!MemoryCache.Default.Contains(channelId + userId))
             {
                 CacheItemPolicy policy = new CacheItemPolicy();
                 policy.Priority = CacheItemPriority.Default;
                 policy.SlidingExpiration = TimeSpan.FromMinutes(chatCacheDurationMinutes);
-                ChatState state = new ChatState(conversationId);
-                MemoryCache.Default.Add(conversationId, state, policy);
+                ChatState state = new ChatState(channelId, userId);
+                MemoryCache.Default.Add(channelId + userId, state, policy);
             }
-            return MemoryCache.Default[conversationId] as ChatState;
+            return MemoryCache.Default[channelId + userId] as ChatState;
         }
 
         public string AccessToken
@@ -84,7 +86,7 @@ namespace CRMBot
             {
                 if (userEntity == null)
                 {
-                    using (var service = CrmHelper.CreateOrganizationService(this.conversationId))
+                    using (var service = CrmHelper.CreateOrganizationService(this.channelId, this.userId))
                     {
                         // Display information about the logged on user.
                         Guid userid = ((WhoAmIResponse)service.Execute(new WhoAmIRequest())).UserId;
@@ -110,7 +112,7 @@ namespace CRMBot
                     request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.All;
                     request.LogicalName = entityLogicalName;
                     RetrieveEntityResponse response;
-                    using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(conversationId))
+                    using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(channelId, userId))
                     {
                         response = (RetrieveEntityResponse)service.Execute(request);
                         if (response != null)
@@ -140,7 +142,7 @@ namespace CRMBot
                             RetrieveAllEntitiesRequest request = new RetrieveAllEntitiesRequest();
                             request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.Entity;
                             RetrieveAllEntitiesResponse response;
-                            using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(conversationId))
+                            using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(channelId, userId))
                             {
                                 response = (RetrieveAllEntitiesResponse)service.Execute(request);
                             }

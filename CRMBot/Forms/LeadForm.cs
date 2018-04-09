@@ -21,7 +21,7 @@ namespace CRMBot.Forms
             OnCompletionAsyncDelegate<LeadForm> processLead = async (context, state) =>
             {
                 string[] nameSplit = state.Name.Split(' ');
-                using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(Guid.Empty.ToString()))
+                using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(string.Empty, string.Empty))
                 {
                     Microsoft.Xrm.Sdk.Entity newLead = new Microsoft.Xrm.Sdk.Entity("lead");
                     newLead["subject"] = "CRMUG Summit 2016 Lead";
