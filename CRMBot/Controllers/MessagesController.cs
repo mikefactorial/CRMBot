@@ -66,16 +66,16 @@ namespace CRMBot
                     {
                         ChatState state = ChatState.RetrieveChatState(message.ChannelId, message.From.Id);
 
-                        if (string.IsNullOrEmpty(state.OrganizationUrl) && ParseCrmUrl(message.Text) == string.Empty)
+                        if (string.IsNullOrEmpty(state.OrganizationUrl) && ParseCrmUrl(message) == string.Empty)
                         {
                             await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hi there, before we can work together you need to tell me your Dynamics 365 URL (e.g. https://contoso.crm.dynamics.com)"));
                         }
-                        else if (string.IsNullOrEmpty(state.AccessToken) || ParseCrmUrl(message.Text) != string.Empty)
+                        else if (string.IsNullOrEmpty(state.AccessToken) || ParseCrmUrl(message) != string.Empty)
                         {
                             string extraQueryParams = string.Empty;
-                            if (ParseCrmUrl(message.Text) != string.Empty)
+                            if (ParseCrmUrl(message) != string.Empty)
                             {
-                                state.OrganizationUrl = ParseCrmUrl(message.Text);
+                                state.OrganizationUrl = ParseCrmUrl(message);
                             }
 
                             Activity replyToConversation = message.CreateReply();
@@ -145,17 +145,24 @@ namespace CRMBot
             return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
         }
 
-        public string ParseCrmUrl(string text)
+        public string ParseCrmUrl(Activity message)
         {
-            var regex = new Regex("<a [^>]*href=(?:'(?<href>.*?)')|(?:\"(?<href>.*?)\")", RegexOptions.IgnoreCase);
-            var urls = regex.Matches(text).OfType<Match>().Select(m => m.Groups["href"].Value).ToList();
-            if (urls.Count > 0)
+            if (message.From.Properties.ContainsKey("crmUrl"))
             {
-                return urls[0];
+                return message.From.Properties["crmUrl"].ToString();
             }
-            else if (text.ToLower().StartsWith("http") && text.ToLower().Contains(".dynamics.com"))
+            else
             {
-                return text;
+                var regex = new Regex("<a [^>]*href=(?:'(?<href>.*?)')|(?:\"(?<href>.*?)\")", RegexOptions.IgnoreCase);
+                var urls = regex.Matches(message.Text).OfType<Match>().Select(m => m.Groups["href"].Value).ToList();
+                if (urls.Count > 0)
+                {
+                    return urls[0];
+                }
+                else if (message.Text.ToLower().StartsWith("http") && message.Text.ToLower().Contains(".dynamics.com"))
+                {
+                    return message.Text;
+                }
             }
             return string.Empty;
 
