@@ -57,7 +57,6 @@ namespace CRMBot
                 if (message.Type == ActivityTypes.Message)
                 {
                     await connector.Conversations.ReplyToActivityAsync(CreateTypingMessage(message));
-
                     if ((message.Text.ToLower().StartsWith("hi ") || message.Text.ToLower().StartsWith("hello ")) && (message.Text.ToLower().Contains("emaline") || message.Text.ToLower().Contains("emmy")))
                     {
                         await Conversation.SendAsync(message, EmmyForm.MakeRootDialog);
@@ -66,13 +65,17 @@ namespace CRMBot
                     {
                         ChatState state = ChatState.RetrieveChatState(message.Conversation.Id);
 
-                        if (string.IsNullOrEmpty(state.OrganizationUrl) && !message.Text.ToLower().StartsWith("http"))
+                        if (string.IsNullOrEmpty(state.OrganizationUrl) && !message.Text.ToLower().StartsWith("http") && !message.From.Properties.ContainsKey("crmUrl"))
                         {
                             await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hi there, before we can work together you need to tell me your Dynamics 365 URL (e.g. https://contoso.crm.dynamics.com)"));
                         }
                         else if (string.IsNullOrEmpty(state.AccessToken) || message.Text.StartsWith("http"))
                         {
-                            if (message.Text.StartsWith("http"))
+                            if (message.From.Properties.ContainsKey("crmUrl"))
+                            {
+                                state.OrganizationUrl = message.From.Properties["crmUrl"].ToString();
+                            }
+                            else if (message.Text.StartsWith("http"))
                             {
                                 state.OrganizationUrl = message.Text;
                             }
