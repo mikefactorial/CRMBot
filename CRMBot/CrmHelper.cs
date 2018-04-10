@@ -14,6 +14,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.ServiceModel.Description;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Web;
 
 namespace CRMBot
@@ -266,6 +267,29 @@ namespace CRMBot
         public static EntityMetadata RetrieveEntityMetadata(string channelId, string userId, string entityLogicalName)
         {
             return ChatState.RetrieveChatState(channelId, userId).RetrieveEntityMetadata(entityLogicalName);
+        }
+
+        public static string ParseCrmUrl(Activity message)
+        {
+            if (message.From.Properties.ContainsKey("crmUrl"))
+            {
+                return message.From.Properties["crmUrl"].ToString();
+            }
+            else
+            {
+                var regex = new Regex("<a [^>]*href=(?:'(?<href>.*?)')|(?:\"(?<href>.*?)\")", RegexOptions.IgnoreCase);
+                var urls = regex.Matches(message.Text).OfType<Match>().Select(m => m.Groups["href"].Value).ToList();
+                if (urls.Count > 0)
+                {
+                    return urls[0];
+                }
+                else if (message.Text.ToLower().StartsWith("http") && message.Text.ToLower().Contains(".dynamics.com"))
+                {
+                    return message.Text;
+                }
+            }
+            return string.Empty;
+
         }
 
         public static OrganizationWebProxyClient CreateOrganizationService(string channelId, string userId)

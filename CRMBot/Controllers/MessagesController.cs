@@ -66,16 +66,16 @@ namespace CRMBot
                     {
                         ChatState state = ChatState.RetrieveChatState(message.ChannelId, message.From.Id);
 
-                        if (string.IsNullOrEmpty(state.OrganizationUrl) && ParseCrmUrl(message) == string.Empty)
+                        if (string.IsNullOrEmpty(state.OrganizationUrl) && CrmHelper.ParseCrmUrl(message) == string.Empty)
                         {
                             await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hi there, before we can work together you need to tell me your Dynamics 365 URL (e.g. https://contoso.crm.dynamics.com)"));
                         }
-                        else if (string.IsNullOrEmpty(state.AccessToken) || ParseCrmUrl(message) != string.Empty)
+                        else if (string.IsNullOrEmpty(state.AccessToken) || CrmHelper.ParseCrmUrl(message) != string.Empty)
                         {
                             string extraQueryParams = string.Empty;
-                            if (ParseCrmUrl(message) != string.Empty)
+                            if (CrmHelper.ParseCrmUrl(message) != string.Empty)
                             {
-                                state.OrganizationUrl = ParseCrmUrl(message);
+                                state.OrganizationUrl = CrmHelper.ParseCrmUrl(message);
                             }
 
                             Activity replyToConversation = message.CreateReply();
@@ -145,28 +145,6 @@ namespace CRMBot
             return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
         }
 
-        public string ParseCrmUrl(Activity message)
-        {
-            if (message.From.Properties.ContainsKey("crmUrl"))
-            {
-                return message.From.Properties["crmUrl"].ToString();
-            }
-            else
-            {
-                var regex = new Regex("<a [^>]*href=(?:'(?<href>.*?)')|(?:\"(?<href>.*?)\")", RegexOptions.IgnoreCase);
-                var urls = regex.Matches(message.Text).OfType<Match>().Select(m => m.Groups["href"].Value).ToList();
-                if (urls.Count > 0)
-                {
-                    return urls[0];
-                }
-                else if (message.Text.ToLower().StartsWith("http") && message.Text.ToLower().Contains(".dynamics.com"))
-                {
-                    return message.Text;
-                }
-            }
-            return string.Empty;
-
-        }
         public static Activity CreateTypingMessage(Activity message)
         {
             Activity reply = message.CreateReply();
