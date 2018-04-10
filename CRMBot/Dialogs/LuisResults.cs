@@ -68,41 +68,26 @@ namespace CRMBot.Dialogs
 
         public static List<DateTime> ParseDateTimes(this EntityRecommendation dateEntity)
         {
-            List<DateTime> dates = new List<DateTime>();
-            if (dateEntity.Resolution != null)
+            List<DateTime> ret = new List<DateTime>();
+            foreach (var vals in dateEntity.Resolution.Values)
             {
-                foreach (string dateTime in dateEntity.Resolution.Values)
+                Dictionary<string, object> values = (Dictionary<string, object>)((List<object>)vals)[0];
+                if (values["type"].ToString() == "daterange")
                 {
-                    DateTime singleDate;
-                    if (DateTime.TryParse(dateTime, out singleDate))
+                    DateTime start;
+                    DateTime end;
+
+                    if (values.ContainsKey("start") && DateTime.TryParse(values["start"].ToString(), out start))
                     {
-                        dates.Add(singleDate);
+                        ret.Add(start);
                     }
-                    else
+                    if (values.ContainsKey("end") && DateTime.TryParse(values["end"].ToString(), out end))
                     {
-                        if (dateTime.Contains("-WXX"))
-                        {
-                            int dayOfWeek;
-                            if (Int32.TryParse(dateTime.Substring(dateTime.Length - 1, 1), out dayOfWeek))
-                            {
-                                dates.Add(GetNextWeekday(DateTime.Now, (DayOfWeek)dayOfWeek));
-                            }
-                        }
-                        else if (dateTime.Contains("-W"))
-                        {
-                            int year;
-                            int index = dateTime.IndexOf("-W") + 2;
-                            int week;
-                            if (Int32.TryParse(dateTime.Substring(0, 4), out year) && Int32.TryParse(dateTime.Substring(index, dateTime.Length - index), out week))
-                            {
-                                dates.Add(FirstDateOfWeekISO8601(year, week, 0));
-                                dates.Add(FirstDateOfWeekISO8601(year, week, 7));
-                            }
-                        }
+                        ret.Add(end);
                     }
                 }
             }
-            return dates;
+            return ret;
         }
 
         public static DateTime GetNextWeekday(DateTime start, DayOfWeek day)
