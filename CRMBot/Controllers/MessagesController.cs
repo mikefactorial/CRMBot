@@ -66,16 +66,21 @@ namespace CRMBot
                     {
                         ChatState state = ChatState.RetrieveChatState(message.ChannelId, message.From.Id);
 
+                        string crmUrl = CrmHelper.ParseCrmUrl(message);
                         if (string.IsNullOrEmpty(state.OrganizationUrl) && CrmHelper.ParseCrmUrl(message) == string.Empty)
                         {
                             await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hi there, before we can work together you need to tell me your Dynamics 365 URL (e.g. https://contoso.crm.dynamics.com)"));
                         }
-                        else if (string.IsNullOrEmpty(state.AccessToken) || CrmHelper.ParseCrmUrl(message) != string.Empty)
+                        else if (string.IsNullOrEmpty(state.AccessToken) || (!string.IsNullOrEmpty(crmUrl) && crmUrl != state.OrganizationUrl))
                         {
                             string extraQueryParams = string.Empty;
-                            if (CrmHelper.ParseCrmUrl(message) != string.Empty)
+                            if (crmUrl != string.Empty && state.OrganizationUrl != crmUrl)
                             {
-                                state.OrganizationUrl = CrmHelper.ParseCrmUrl(message);
+                                if (!string.IsNullOrEmpty(state.OrganizationUrl))
+                                {
+                                    extraQueryParams = "prompt=login";
+                                }
+                                state.OrganizationUrl = crmUrl;
                             }
 
                             Activity replyToConversation = message.CreateReply();
@@ -88,7 +93,7 @@ namespace CRMBot
                             {
                                 // ASP.NET Web Application Hosted in Azure
                                 // Pass the user id
-                                Value = $"https://crminator.azurewebsites.net/Home/Login?channelId={HttpUtility.UrlEncode(message.ChannelId)}&userId={HttpUtility.UrlEncode(message.From.Id)}&extraQueryParams={extraQueryParams}",
+                                Value = $"https://crminator.azurewebsites.net/Home/Login?channelId={HttpUtility.UrlEncode(message.ChannelId)}&userId={HttpUtility.UrlEncode(message.From.Id)}&userName={HttpUtility.UrlEncode(message.From.Name)}&fromId={HttpUtility.UrlEncode(message.Recipient.Id)}&fromName={HttpUtility.UrlEncode(message.Recipient.Name)}&serviceUrl={HttpUtility.UrlEncode(message.ServiceUrl)}&conversationId={HttpUtility.UrlEncode(message.Conversation.Id)}&extraQueryParams={extraQueryParams}",
                                 Type = "signin",
                                 Title = "Connect"
                             };

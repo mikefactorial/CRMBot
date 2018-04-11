@@ -18,6 +18,8 @@ using System.ServiceModel.Description;
 using Microsoft.Xrm.Sdk.WebServiceClient;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Bot.Builder.Dialogs;
+using Microsoft.Bot.Builder.Dialogs.Internals;
 
 namespace CRMBot
 {
