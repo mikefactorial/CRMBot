@@ -26,13 +26,15 @@ namespace CRMBot
 
         public static string FindEntityLogicalName(string channelId, string userId, string text)
         {
-            EntityMetadata[] metadata = ChatState.RetrieveChatState(channelId, userId).RetrieveMetadata();
+            ChatState state = ChatState.RetrieveChatState(channelId, userId);
+            EntityMetadata[] metadata = state.RetrieveMetadata();
             string subText = text.ToLower();
 
             //Equals
             EntityMetadata entity = metadata.FirstOrDefault(e => (e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText) || (e.DisplayCollectionName != null && e.DisplayCollectionName.UserLocalizedLabel != null && e.DisplayCollectionName.UserLocalizedLabel.Label.ToLower() == subText));
             if (entity != null)
             {
+
                 return entity.LogicalName;
             }
             entity = metadata.FirstOrDefault(e => (e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText) || (e.DisplayCollectionName != null && e.DisplayCollectionName.UserLocalizedLabel != null && e.DisplayCollectionName.UserLocalizedLabel.Label.ToLower() == subText));

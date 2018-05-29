@@ -26,7 +26,6 @@ namespace CRMBot
     public class ChatState
     {
         public Dictionary<string, object> Data = new Dictionary<string, object>();
-        private Dictionary<string, EntityMetadata> metadata = null;
         private static double chatCacheDurationMinutes = 30.0000;
         private string channelId = string.Empty;
         private string userId = string.Empty;
@@ -51,13 +50,6 @@ namespace CRMBot
             else
             {
                 return true;
-            }
-        }
-        public static void ClearChatState(string channelId, string userId)
-        {
-            if (MemoryCache.Default.Contains(channelId + userId))
-            {
-                MemoryCache.Default.Remove(channelId + userId);
             }
         }
         public static ChatState RetrieveChatState(string channelId, string userId)
@@ -105,60 +97,28 @@ namespace CRMBot
         }
         public EntityMetadata RetrieveEntityMetadata(string entityLogicalName)
         {
-            EntityMetadata entity = this.Metadata.FirstOrDefault(e => e.LogicalName == entityLogicalName);
-            if (entity != null)
+            RetrieveEntityRequest request = new RetrieveEntityRequest();
+            request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.All;
+            request.LogicalName = entityLogicalName;
+            RetrieveEntityResponse response;
+            using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(channelId, userId))
             {
-                if (entity.Attributes == null || entity.Attributes.Length == 0)
-                {
-                    RetrieveEntityRequest request = new RetrieveEntityRequest();
-                    request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.All;
-                    request.LogicalName = entityLogicalName;
-                    RetrieveEntityResponse response;
-                    using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(channelId, userId))
-                    {
-                        response = (RetrieveEntityResponse)service.Execute(request);
-                        if (response != null)
-                        {
-                            this.metadata[entityLogicalName] = response.EntityMetadata;
-                            entity = this.Metadata.FirstOrDefault(e => e.LogicalName == entityLogicalName);
-                        }
-                    }
-                }
+                response = (RetrieveEntityResponse)service.Execute(request);
+                return response.EntityMetadata;
             }
-            return entity;
+
         }
         public EntityMetadata[] RetrieveMetadata()
         {
-            return this.Metadata;
-        }
-        private EntityMetadata[] Metadata
-        {
-            get
+            RetrieveAllEntitiesRequest request = new RetrieveAllEntitiesRequest();
+            request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.Entity;
+            RetrieveAllEntitiesResponse response;
+            using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(channelId, userId))
             {
-                if (metadata == null)
-                {
-                    lock (metadataLock)
-                    {
-                        if (metadata == null)
-                        {
-                            RetrieveAllEntitiesRequest request = new RetrieveAllEntitiesRequest();
-                            request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.Entity;
-                            RetrieveAllEntitiesResponse response;
-                            using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(channelId, userId))
-                            {
-                                response = (RetrieveAllEntitiesResponse)service.Execute(request);
-                            }
-
-                            this.metadata = new Dictionary<string, EntityMetadata>();
-                            foreach (EntityMetadata metadata in response.EntityMetadata)
-                            {
-                                this.metadata.Add(metadata.LogicalName, metadata);
-                            }
-                        }
-                    }
-                }
-                return metadata.Values.ToArray();
+                response = (RetrieveAllEntitiesResponse)service.Execute(request);
             }
+
+            return response.EntityMetadata;
         }
         public void Set(string key, object data)
         {

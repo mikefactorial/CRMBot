@@ -279,7 +279,7 @@ namespace CRMBot.Dialogs
             }
             else if (result.Query.ToLower().StartsWith("bye") || result.Query.ToLower().Contains("see ya") || result.Query.ToLower().Contains("bye") || result.Query.ToLower().Contains("later"))
             {
-                ChatState.ClearChatState(this.channelId, this.userId);
+                chatState.Data.Clear();
                 await context.PostAsync($"CRM you later {chatState.UserFirstName}...");
             }
             else
