@@ -120,12 +120,16 @@ namespace CRMBot
                     {
                         if (message.Attachments != null && message.Attachments.Count > 0)
                         {
-                            List<byte[]> attachments = new List<byte[]>();
+                            List<CrmAttachment> attachments = new List<CrmAttachment>();
                             foreach (Attachment attach in message.Attachments)
                             {
                                 if (!string.IsNullOrEmpty(attach.ContentUrl))
                                 {
-                                    attachments.Add(new System.Net.WebClient().DownloadData(attach.ContentUrl));
+                                    attachments.Add(new CrmAttachment()
+                                    {
+                                        Attachment = new System.Net.WebClient().DownloadData(attach.ContentUrl),
+                                        FileName = attach.Name
+                                    });
                                 }
                             }
 

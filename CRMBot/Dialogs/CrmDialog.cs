@@ -17,6 +17,11 @@ using System.Web;
 
 namespace CRMBot.Dialogs
 {
+    public class CrmAttachment
+    {
+        public byte[] Attachment { get; set; }
+        public string FileName { get; set; }
+    }
     //[LuisModel("cc421661-4803-4359-b19b-35a8bae3b466", "70c9f99320804782866c3eba387d54bf")]
     [LuisModel("64c400cf-b36d-4874-bd01-1c7567e57d8a", "a03f8796d25a493dac9ff9e8ad2b15a6")]
     [Serializable]
@@ -51,10 +56,11 @@ namespace CRMBot.Dialogs
         public static string[] ActionPhrases = new string[]
         {
             "\"How many tasks, emails etc.\"",
-            "\"Follow up July 12 2016\"",
+            "\"Follow up July 12 2020\"",
             "\"Show me the name, status, date created etc.\"",
             "Send me an image and say \"Attach as 'Profile Pic'\"",
             "\"Forget current record\"",
+            "\"Open record\"",
         };
 
         public static string[] FindActionPhrases = new string[]
@@ -605,15 +611,15 @@ namespace CRMBot.Dialogs
                     subject = subjectEntity.Entity;
                 }
                 int i = 1;
-                foreach (byte[] attachment in this.Attachments)
+                foreach (CrmAttachment attachment in this.Attachments)
                 {
                     Entity annotation = new Entity("annotation");
                     annotation["objectid"] = new EntityReference() { Id = this.SelectedEntity.Id, LogicalName = this.SelectedEntity.LogicalName };
-                    string encodedData = System.Convert.ToBase64String(attachment);
+                    string encodedData = System.Convert.ToBase64String(attachment.Attachment);
 
-                    annotation["filename"] = subject + i;
+                    annotation["filename"] = attachment.FileName;
                     annotation["subject"] = subject;
-                    annotation["mimetype"] = "application /octet-stream";
+                    annotation["mimetype"] = MimeMapping.GetMimeMapping(attachment.FileName);
                     annotation["documentbody"] = encodedData;
                     ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
                     using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
@@ -1022,11 +1028,11 @@ namespace CRMBot.Dialogs
                 ChatState.RetrieveChatState(this.channelId, this.userId).Set(ChatState.SelectedEntity, value);
             }
         }
-        public List<byte[]> Attachments
+        public List<CrmAttachment> Attachments
         {
             get
             {
-                return ChatState.RetrieveChatState(this.channelId, this.userId).Get(ChatState.Attachments) as List<byte[]>;
+                return ChatState.RetrieveChatState(this.channelId, this.userId).Get(ChatState.Attachments) as List<CrmAttachment>;
             }
             set
             {
