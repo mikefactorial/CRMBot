@@ -1,29 +1,67 @@
-<html><head>
-    <link href="https://cdn.botframework.com/botframework-webchat/latest/botchat.css" rel="stylesheet">
-    <script type="text/javascript" src="ClientGlobalContext.js.aspx"></script>
-    <script src="https://cdn.botframework.com/botframework-webchat/latest/botchat.js"></script>
-  <meta><meta><meta></head>
-  <body style="word-wrap: break-word;">
-    <div id="bot">
-    <script>
-function _getContext() {
- var errorMessage = "Context is not available.";
- if (typeof GetGlobalContext != "undefined")
- { return GetGlobalContext(); }
- else
- {
-  if (typeof Xrm != "undefined") {
-   return Xrm.Page.context;
-  }
-  else { throw new Error(errorMessage); }
- }
-}
-      BotChat.App({
-        directLine: { secret: 'KF77VMEOip4.cwA.NNM.92HxlQ0y3EL1Abfy9QMk2xHW8OXAiAsrY3MUgsd64LA'},
-        user: { id: 'CRM', crmUrl: _getContext().getClientUrl()},
-        bot: { id: 'CRMInator' },
-        resize: 'detect'
-      }, document.getElementById("bot"));
+<html>
+    <head>
+        <link href="https://cdn.botframework.com/botframework-webchat/latest/botchat.css" rel="stylesheet">
+        <script type="text/javascript" src="ClientGlobalContext.js.aspx"></script>
+        <script src="https://cdn.botframework.com/botframework-webchat/latest/botchat.js"></script>
+    </head>
+    <body style="word-wrap: break-word;"> 
+        <div id="bot"></div>
+        <script>
+            function _getContext() {
+                var errorMessage = "Context is not available.";
+                if (typeof GetGlobalContext != "undefined") {
+                    return GetGlobalContext();
+                }
+                else
+                {
+                    if (typeof Xrm != "undefined") {
+                        return Xrm.Page.context;
+                    }
+                    else {
+                        throw new Error(errorMessage);
+                    }
+                }
+            }
+
+            botConnection = new BotChat.DirectLine({
+                secret: 'KF77VMEOip4.cwA.NNM.92HxlQ0y3EL1Abfy9QMk2xHW8OXAiAsrY3MUgsd64LA'
+            });
+            BotChat.App({
+                botConnection: botConnection,
+                user: { id: 'CRM', crmUrl: _getContext().getClientUrl()},
+                bot: { id: 'CRMInator' },
+                resize: 'detect'
+            }, document.getElementById("bot"));
+
+            botConnection.activity$
+                .filter(_isOpenUrlEvent)
+                .subscribe(_openPage);
+
+            botConnection.activity$
+                .filter(_isOpenFormEvent)
+                .subscribe(_openForm);
+
+            function _isOpenUrlEvent(activity) {
+                return activity.type === "event" && activity.name == "openUrl";
+            }
+
+            function _isOpenFormEvent(activity) {
+                return activity.type === "event" && activity.name == "openForm";
+            }
+
+            function _openPage(activity) {
+                Xrm.Navigation.openUrl(activity.text)
+            }
+
+            function _openForm(activity) {
+                var opts = activity.text.split("|")
+                var entityFormOptions = {};
+                entityFormOptions["entityName"] = opts[0];
+                entityFormOptions["entityId"] = opts[1];
+                entityFormOptions["openInNewWindow"] = true;
+                Xrm.Navigation.openForm(entityFormOptions);
+            }
+
     </script>
   
-</div></body></html>
+</body></html>

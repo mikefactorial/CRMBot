@@ -26,6 +26,8 @@ namespace CRMBot
     public class ChatState
     {
         public Dictionary<string, object> Data = new Dictionary<string, object>();
+        public Dictionary<string, string> EntityMapping = new Dictionary<string, string>();
+
         private static double chatCacheDurationMinutes = 30.0000;
         private string channelId = string.Empty;
         private string userId = string.Empty;

@@ -28,6 +28,261 @@ namespace CRMBot.Dialogs
 
     public static class LuisResultExtensions
     {
+        private const int MIN_TEXTLENGTHFORFIELDSEARCH = 4;
+        private const int MIN_TEXTLENGTHFORENTITYSEARCH = 4;
+
+        public static string FindAttributeLogicalName(this LuisResult result, EntityMetadata entity, string text)
+        {
+            string subText = text.ToLower();
+            //Equals
+            AttributeMetadata att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
+            if (att != null)
+            {
+                return att.LogicalName;
+            }
+            att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
+            if (att != null)
+            {
+                return att.LogicalName;
+            }
+            att = entity.Attributes.FirstOrDefault(a => a.LogicalName == subText);
+            if (att != null)
+            {
+                return att.LogicalName;
+            }
+            att = entity.Attributes.FirstOrDefault(a => a.LogicalName == subText);
+            if (att != null)
+            {
+                return att.LogicalName;
+            }
+
+            //Substring Equals
+
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.ToLower();
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower() == subText);
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                att = entity.Attributes.FirstOrDefault(a => a.LogicalName == subText);
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                att = entity.Attributes.FirstOrDefault(a => a.LogicalName == subText);
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+            //Substring Contains
+            subText = text.ToLower();
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.ToLower();
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                att = entity.Attributes.FirstOrDefault(a => a.DisplayName != null && a.DisplayName.UserLocalizedLabel != null && a.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                att = entity.Attributes.FirstOrDefault(a => a.LogicalName.Contains(subText));
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(1);
+            }
+
+            subText = text.Replace(" ", "").ToLower();
+            while (subText.Length >= MIN_TEXTLENGTHFORFIELDSEARCH)
+            {
+                att = entity.Attributes.FirstOrDefault(a => a.LogicalName.Contains(subText));
+                if (att != null)
+                {
+                    return att.LogicalName;
+                }
+                subText = subText.Substring(0, subText.Length - 1);
+            }
+
+
+            return string.Empty;
+        }
+
+        public static string FindEntityLogicalName(this LuisResult result, string channelId, string userId, EntityRecommendation entityTypeEntity)
+        {
+            ChatState state = ChatState.RetrieveChatState(channelId, userId);
+            string text = entityTypeEntity.Entity.ToLower();
+
+            if (!state.EntityMapping.ContainsKey(text))
+            {
+                string subText = text;
+                EntityMetadata[] metadata = state.RetrieveMetadata();
+                state.EntityMapping[text] = "contact"; //If can't find a match default to contact records
+                //Equals
+                EntityMetadata entity = metadata.FirstOrDefault(e => (e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText) || (e.DisplayCollectionName != null && e.DisplayCollectionName.UserLocalizedLabel != null && e.DisplayCollectionName.UserLocalizedLabel.Label.ToLower() == subText));
+                if (entity != null)
+                {
+                    state.EntityMapping[text] = entity.LogicalName;
+                    return state.EntityMapping[text];
+                }
+                entity = metadata.FirstOrDefault(e => (e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText) || (e.DisplayCollectionName != null && e.DisplayCollectionName.UserLocalizedLabel != null && e.DisplayCollectionName.UserLocalizedLabel.Label.ToLower() == subText));
+                if (entity != null)
+                {
+                    state.EntityMapping[text] = entity.LogicalName;
+                    return state.EntityMapping[text];
+                }
+                entity = metadata.FirstOrDefault(e => e.LogicalName == subText);
+                if (entity != null)
+                {
+                    state.EntityMapping[text] = entity.LogicalName;
+                    return state.EntityMapping[text];
+                }
+                //Substring Equals
+                while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
+                {
+                    entity = metadata.FirstOrDefault(e => (e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText) || (e.DisplayCollectionName != null && e.DisplayCollectionName.UserLocalizedLabel != null && e.DisplayCollectionName.UserLocalizedLabel.Label.ToLower() == subText));
+                    if (entity != null)
+                    {
+                        state.EntityMapping[text] = entity.LogicalName;
+                        return state.EntityMapping[text];
+                    }
+                    subText = subText.Substring(1);
+                }
+
+                subText = text.ToLower();
+                while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
+                {
+                    entity = metadata.FirstOrDefault(e => (e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText) || (e.DisplayCollectionName != null && e.DisplayCollectionName.UserLocalizedLabel != null && e.DisplayCollectionName.UserLocalizedLabel.Label.ToLower() == subText));
+                    if (entity != null)
+                    {
+                        state.EntityMapping[text] = entity.LogicalName;
+                        return state.EntityMapping[text];
+                    }
+                    subText = subText.Substring(0, subText.Length - 1);
+                }
+
+
+                subText = text.Replace(" ", "").ToLower();
+                while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
+                {
+                    entity = metadata.FirstOrDefault(e => e.LogicalName == subText);
+                    if (entity != null)
+                    {
+                        state.EntityMapping[text] = entity.LogicalName;
+                        return state.EntityMapping[text];
+                    }
+                    subText = subText.Substring(1);
+                }
+
+                subText = text.Replace(" ", "").ToLower();
+                while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
+                {
+                    entity = metadata.FirstOrDefault(e => e.LogicalName == subText);
+                    if (entity != null)
+                    {
+                        state.EntityMapping[text] = entity.LogicalName;
+                        return state.EntityMapping[text];
+                    }
+                    subText = subText.Substring(0, subText.Length - 1);
+                }
+
+                //Contains
+                subText = text.ToLower();
+                while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
+                {
+                    entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
+                    if (entity != null)
+                    {
+                        state.EntityMapping[text] = entity.LogicalName;
+                        return state.EntityMapping[text];
+                    }
+                    subText = subText.Substring(1);
+                }
+
+                subText = text.ToLower();
+                while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
+                {
+                    entity = metadata.FirstOrDefault(e => e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower().Contains(subText));
+                    if (entity != null)
+                    {
+                        state.EntityMapping[text] = entity.LogicalName;
+                        return state.EntityMapping[text];
+                    }
+                    subText = subText.Substring(0, subText.Length - 1);
+                }
+
+
+                subText = text.Replace(" ", "").ToLower();
+                while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
+                {
+                    entity = metadata.FirstOrDefault(e => e.LogicalName.Contains(subText));
+                    if (entity != null)
+                    {
+                        state.EntityMapping[text] = entity.LogicalName;
+                        return state.EntityMapping[text];
+                    }
+                    subText = subText.Substring(1);
+                }
+
+                subText = text.Replace(" ", "").ToLower();
+                while (subText.Length >= MIN_TEXTLENGTHFORENTITYSEARCH)
+                {
+                    entity = metadata.FirstOrDefault(e => e.LogicalName.Contains(subText));
+                    if (entity != null)
+                    {
+                        state.EntityMapping[text] = entity.LogicalName;
+                        return state.EntityMapping[text];
+                    }
+                    subText = subText.Substring(0, subText.Length - 1);
+                }
+            }
+            return state.EntityMapping[text];
+        }
+
         public static EntityRecommendation RetrieveEntity(this LuisResult result, string channelId, string userId, EntityTypeNames entityType)
         {
             double? max = -1.00;
@@ -52,11 +307,11 @@ namespace CRMBot.Dialogs
                     {
                         bestEntity.Entity = bestEntity.Entity.Replace(" ", string.Empty);
                     }
-                    bestEntity.Entity = bestEntity.Entity.Replace("'s", string.Empty).Replace(" '", string.Empty).Replace("' ", string.Empty);
+                    bestEntity.Entity = bestEntity.Entity.Replace("'s", string.Empty).Replace(" '", string.Empty).Replace("' ", string.Empty).Replace(" - ", "-").Replace(" . ", ".").Replace(" / ", "/");
                 }
                 else if (bestEntity.Type == EntityTypeNames.EntityType.EntityTypeName)
                 {
-                    bestEntity.Entity = CrmHelper.FindEntityLogicalName(channelId, userId, bestEntity.Entity);
+                    bestEntity.Entity = result.FindEntityLogicalName(channelId, userId, bestEntity);
                 }
                 if (bestEntity.Type.Contains(":"))
                 {

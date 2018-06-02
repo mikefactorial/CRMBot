@@ -24,7 +24,6 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.FormFlow;
-using CRMBot.Forms;
 using System.Web;
 using System.Text.RegularExpressions;
 
@@ -41,7 +40,7 @@ namespace CRMBot
             {
                 ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
                 // return our reply to the user
-                Activity reply = message.CreateReply("Hi there. CRM Bot is undergoing an upgrade of it's framework version to better serve your CRM needs. Check back soon. CRM you later...");
+                Activity reply = message.CreateReply("Hi there. Dynamics Bot is undergoing an upgrade of it's framework version to better serve your CRM needs. Check back soon. CRM you later...");
                 await connector.Conversations.ReplyToActivityAsync(reply);
             }
             else
@@ -50,50 +49,60 @@ namespace CRMBot
             }
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
-            */
             MicrosoftAppCredentials.TrustServiceUrl(message.ServiceUrl, DateTime.MaxValue);
+            */
             ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
+
             try
             {
                 if (message.Type == ActivityTypes.Message)
                 {
                     await connector.Conversations.ReplyToActivityAsync(CreateTypingMessage(message));
-                    if ((message.Text.ToLower().StartsWith("hi ") || message.Text.ToLower().StartsWith("hello ")) && (message.Text.ToLower().Contains("emaline") || message.Text.ToLower().Contains("emmy")))
+                    ChatState state = ChatState.RetrieveChatState(message.ChannelId, message.From.Id);
+
+                    string crmUrl = CrmHelper.ParseCrmUrl(message);
+                    if (string.IsNullOrEmpty(state.OrganizationUrl) && CrmHelper.ParseCrmUrl(message) == string.Empty)
                     {
-                        await Conversation.SendAsync(message, EmmyForm.MakeRootDialog);
+                        await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hi there, before we can work together you need to tell me your Dynamics 365 URL (e.g. https://contoso.crm.dynamics.com)"));
                     }
-                    else
+                    else if (string.IsNullOrEmpty(state.AccessToken) || (!string.IsNullOrEmpty(crmUrl) && crmUrl != state.OrganizationUrl))
                     {
-                        ChatState state = ChatState.RetrieveChatState(message.ChannelId, message.From.Id);
-
-                        string crmUrl = CrmHelper.ParseCrmUrl(message);
-                        if (string.IsNullOrEmpty(state.OrganizationUrl) && CrmHelper.ParseCrmUrl(message) == string.Empty)
+                        string extraQueryParams = string.Empty;
+                        if (crmUrl != string.Empty && state.OrganizationUrl != crmUrl)
                         {
-                            await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hi there, before we can work together you need to tell me your Dynamics 365 URL (e.g. https://contoso.crm.dynamics.com)"));
-                        }
-                        else if (string.IsNullOrEmpty(state.AccessToken) || (!string.IsNullOrEmpty(crmUrl) && crmUrl != state.OrganizationUrl))
-                        {
-                            string extraQueryParams = string.Empty;
-                            if (crmUrl != string.Empty && state.OrganizationUrl != crmUrl)
+                            if (!string.IsNullOrEmpty(state.OrganizationUrl))
                             {
-                                if (!string.IsNullOrEmpty(state.OrganizationUrl))
-                                {
-                                    extraQueryParams = "prompt=login";
-                                }
-                                state.OrganizationUrl = crmUrl;
+                                extraQueryParams = "prompt=login";
                             }
+                            state.OrganizationUrl = crmUrl;
+                        }
 
+                        string applicationUrl = HttpContext.Current.Request.Url.Scheme + "://" + HttpContext.Current.Request.Url.Authority;
+                        if (message.From.Properties.ContainsKey("crmUrl"))
+                        {
+                            await connector.Conversations.SendToConversationAsync(message.CreateReply("Give me a second. I'm logging you in..."));
+
+                            Activity backChannelReply = message.CreateReply();
+                            backChannelReply.Text = $"{applicationUrl}/Home/Login?channelId={HttpUtility.UrlEncode(message.ChannelId)}&userId={HttpUtility.UrlEncode(message.From.Id)}&userName={HttpUtility.UrlEncode(message.From.Name)}&fromId={HttpUtility.UrlEncode(message.Recipient.Id)}&fromName={HttpUtility.UrlEncode(message.Recipient.Name)}&serviceUrl={HttpUtility.UrlEncode(message.ServiceUrl)}&conversationId={HttpUtility.UrlEncode(message.Conversation.Id)}&extraQueryParams={extraQueryParams}";
+                            backChannelReply.Name = "openUrl";
+                            backChannelReply.Recipient = message.From;
+                            backChannelReply.Type = ActivityTypes.Event;
+                            await connector.Conversations.SendToConversationAsync(backChannelReply);
+                        }
+                        else
+                        {
                             Activity replyToConversation = message.CreateReply();
                             replyToConversation.Recipient = message.From;
                             replyToConversation.Type = "message";
                             replyToConversation.Attachments = new List<Attachment>();
+
 
                             List<CardAction> cardButtons = new List<CardAction>();
                             CardAction plButton = new CardAction()
                             {
                                 // ASP.NET Web Application Hosted in Azure
                                 // Pass the user id
-                                Value = $"https://crminator.azurewebsites.net/Home/Login?channelId={HttpUtility.UrlEncode(message.ChannelId)}&userId={HttpUtility.UrlEncode(message.From.Id)}&userName={HttpUtility.UrlEncode(message.From.Name)}&fromId={HttpUtility.UrlEncode(message.Recipient.Id)}&fromName={HttpUtility.UrlEncode(message.Recipient.Name)}&serviceUrl={HttpUtility.UrlEncode(message.ServiceUrl)}&conversationId={HttpUtility.UrlEncode(message.Conversation.Id)}&extraQueryParams={extraQueryParams}",
+                                Value = $"{applicationUrl}/Home/Login?channelId={HttpUtility.UrlEncode(message.ChannelId)}&userId={HttpUtility.UrlEncode(message.From.Id)}&userName={HttpUtility.UrlEncode(message.From.Name)}&fromId={HttpUtility.UrlEncode(message.Recipient.Id)}&fromName={HttpUtility.UrlEncode(message.Recipient.Name)}&serviceUrl={HttpUtility.UrlEncode(message.ServiceUrl)}&conversationId={HttpUtility.UrlEncode(message.Conversation.Id)}&extraQueryParams={extraQueryParams}",
                                 Type = "signin",
                                 Title = "Connect"
                             };
@@ -105,32 +114,32 @@ namespace CRMBot
                             replyToConversation.Attachments.Add(plAttachment);
                             await connector.Conversations.SendToConversationAsync(replyToConversation);
                         }
+                    }
+                    else
+                    {
+                        if (message.Attachments != null && message.Attachments.Count > 0)
+                        {
+                            List<byte[]> attachments = new List<byte[]>();
+                            foreach (Attachment attach in message.Attachments)
+                            {
+                                if (!string.IsNullOrEmpty(attach.ContentUrl))
+                                {
+                                    attachments.Add(new System.Net.WebClient().DownloadData(attach.ContentUrl));
+                                }
+                            }
+
+                            Dialogs.CrmDialog dialog = new Dialogs.CrmDialog(message);
+                            dialog.Attachments = attachments;
+
+                            if (string.IsNullOrEmpty(message.Text))
+                            {
+                                await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"I got your file. What would you like to do with it? You can say {string.Join(" or ", Dialogs.CrmDialog.AttachmentActionPhrases)}."));
+                            }
+                        }
                         else
                         {
-                            if (message.Attachments != null && message.Attachments.Count > 0)
-                            {
-                                List<byte[]> attachments = new List<byte[]>();
-                                foreach (Attachment attach in message.Attachments)
-                                {
-                                    if (!string.IsNullOrEmpty(attach.ContentUrl))
-                                    {
-                                        attachments.Add(new System.Net.WebClient().DownloadData(attach.ContentUrl));
-                                    }
-                                }
-
-                                Dialogs.CrmDialog dialog = new Dialogs.CrmDialog(message);
-                                dialog.Attachments = attachments;
-
-                                if (string.IsNullOrEmpty(message.Text))
-                                {
-                                    await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"I got your file. What would you like to do with it? You can say {string.Join(" or ", Dialogs.CrmDialog.AttachmentActionPhrases)}."));
-                                }
-                            }
-                            else
-                            {
-                                await connector.Conversations.ReplyToActivityAsync(CreateTypingMessage(message));
-                                await Conversation.SendAsync(message, () => new CRMBot.Dialogs.CrmDialog(message));
-                            }
+                            await connector.Conversations.ReplyToActivityAsync(CreateTypingMessage(message));
+                            await Conversation.SendAsync(message, () => new CRMBot.Dialogs.CrmDialog(message));
                         }
                     }
                 }

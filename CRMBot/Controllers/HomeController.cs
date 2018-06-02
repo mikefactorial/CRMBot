@@ -31,7 +31,7 @@ namespace CRMBot
 
             AuthenticationContext authContext = new AuthenticationContext(ConfigurationManager.AppSettings["CrmAuthority"]);
             var authUri = authContext.GetAuthorizationRequestUrlAsync(state.OrganizationUrl, ConfigurationManager.AppSettings["CrmClientId"],
-            new Uri(ConfigurationManager.AppSettings["CrmRedirectUrl"]), UserIdentifier.AnyUser, extraQueryParams);
+            new Uri(ConfigurationManager.AppSettings["CrmAuthorizationUrl"]), UserIdentifier.AnyUser, extraQueryParams);
             return Redirect(authUri.Result.ToString());
         }
 
@@ -39,7 +39,7 @@ namespace CRMBot
         {
             AuthenticationContext authContext = new AuthenticationContext(ConfigurationManager.AppSettings["CrmAuthority"]);
             var authResult = authContext.AcquireTokenByAuthorizationCodeAsync(
-            code, new Uri(ConfigurationManager.AppSettings["CrmRedirectUrl"]),
+            code, new Uri(ConfigurationManager.AppSettings["CrmAuthorizationUrl"]),
             new ClientCredential(ConfigurationManager.AppSettings["CrmClientId"],
             ConfigurationManager.AppSettings["CrmClientSecret"]));
 
