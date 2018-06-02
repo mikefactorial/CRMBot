@@ -82,7 +82,8 @@ namespace CRMBot
             {
                 if (userEntity == null)
                 {
-                    using (var service = CrmHelper.CreateOrganizationService(this.channelId, this.userId))
+                    ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
+                    using (var service = chatState.CreateOrganizationService())
                     {
                         // Display information about the logged on user.
                         Guid userid = ((WhoAmIResponse)service.Execute(new WhoAmIRequest())).UserId;
@@ -103,19 +104,29 @@ namespace CRMBot
             request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.All;
             request.LogicalName = entityLogicalName;
             RetrieveEntityResponse response;
-            using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(channelId, userId))
+            using (OrganizationWebProxyClient service = this.CreateOrganizationService())
             {
                 response = (RetrieveEntityResponse)service.Execute(request);
                 return response.EntityMetadata;
             }
-
         }
+
+        public OrganizationWebProxyClient CreateOrganizationService()
+        {
+            //Create your Organization Service Proxy  
+            OrganizationWebProxyClient service = new OrganizationWebProxyClient(
+                new Uri(this.OrganizationUrl + @"/xrmservices/2011/organization.svc/web?SdkClientVersion=8.2"),
+                false);
+            service.HeaderToken = this.AccessToken;
+            return service;
+        }
+
         public EntityMetadata[] RetrieveMetadata()
         {
             RetrieveAllEntitiesRequest request = new RetrieveAllEntitiesRequest();
             request.EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.Entity;
             RetrieveAllEntitiesResponse response;
-            using (OrganizationWebProxyClient service = CrmHelper.CreateOrganizationService(channelId, userId))
+            using (OrganizationWebProxyClient service = this.CreateOrganizationService())
             {
                 response = (RetrieveAllEntitiesResponse)service.Execute(request);
             }

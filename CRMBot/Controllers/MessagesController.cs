@@ -26,6 +26,7 @@ using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.FormFlow;
 using System.Web;
 using System.Text.RegularExpressions;
+using CRMBot.Dialogs;
 
 namespace CRMBot
 {
@@ -60,8 +61,8 @@ namespace CRMBot
                     await connector.Conversations.ReplyToActivityAsync(CreateTypingMessage(message));
                     ChatState state = ChatState.RetrieveChatState(message.ChannelId, message.From.Id);
 
-                    string crmUrl = CrmHelper.ParseCrmUrl(message);
-                    if (string.IsNullOrEmpty(state.OrganizationUrl) && CrmHelper.ParseCrmUrl(message) == string.Empty)
+                    string crmUrl = CrmDialog.ParseCrmUrl(message);
+                    if (string.IsNullOrEmpty(state.OrganizationUrl) && CrmDialog.ParseCrmUrl(message) == string.Empty)
                     {
                         await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hi there, before we can work together you need to tell me your Dynamics 365 URL (e.g. https://contoso.crm.dynamics.com)"));
                     }

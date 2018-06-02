@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -108,7 +109,8 @@ namespace CRMBot.Dialogs
                 {
                     entity["subject"] = subject;
                 }
-                using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.channelId, this.userId))
+                ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
+                using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                 {
                     serviceProxy.Create(entity);
                 }
@@ -130,10 +132,11 @@ namespace CRMBot.Dialogs
         [LuisIntent("Display")]
         public async Task Display(IDialogContext context, LuisResult result)
         {
+            ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
             this.FindEntity(result, true);
             if (this.SelectedEntity != null)
             {
-                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.channelId, this.userId,this.SelectedEntity.LogicalName);
+                EntityMetadata metadata = ChatState.RetrieveChatState(this.channelId, this.userId).RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
                 EntityRecommendation displayField = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.DisplayField);
                 string displayName = RetrieveEntityDisplayName(metadata, false);
                 if (displayField != null)
@@ -156,7 +159,7 @@ namespace CRMBot.Dialogs
             }
             else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
             {
-                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.channelId, this.userId,this.FilteredEntities[0].LogicalName);
+                EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.FilteredEntities[0].LogicalName);
                 string displayName = RetrieveEntityDisplayName(metadata, true);
                 await context.PostAsync($"Hmmm...I couldn't find that record. These are the currently selected {displayName}\r\n{this.BuildFilteredEntitiesList(result)}");
             }
@@ -204,7 +207,7 @@ namespace CRMBot.Dialogs
                     if (this.SelectedEntity != null)
                     {
                         this.FilteredEntities = null;
-                        EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.channelId, this.userId,this.SelectedEntity.LogicalName);
+                        EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
                         string displayName = RetrieveEntityDisplayName(metadata, false);
                         await context.PostAsync($"Got it. You've selected the {displayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]}. Now say {BuildCommandList(ActionPhrases)}");
                     }
@@ -250,7 +253,7 @@ namespace CRMBot.Dialogs
                 }
                 else
                 {
-                    EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.channelId, this.userId,this.SelectedEntity.LogicalName);
+                    EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
                     string displayName = RetrieveEntityDisplayName(metadata, false);
                     await context.PostAsync($"You've selected a {displayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]}? Now say {BuildCommandList(ActionPhrases)}");
                 }
@@ -337,7 +340,8 @@ namespace CRMBot.Dialogs
             this.FindEntity(result, true);
             if (this.SelectedEntity != null)
             {
-                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.channelId, this.userId,this.SelectedEntity.LogicalName);
+                ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
+                EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
                 EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.AttributeName);
                 EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.AttributeValue);
                 string displayName = RetrieveEntityDisplayName(metadata, false);
@@ -347,7 +351,7 @@ namespace CRMBot.Dialogs
                     if (!string.IsNullOrEmpty(att))
                     {
                         this.SelectedEntity[att] = attributeValue.Entity;
-                        using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.channelId, this.userId))
+                        using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                         {
                             serviceProxy.Update(this.SelectedEntity);
                             await context.PostAsync($"I've update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record with the new {attributeName.Entity} {attributeValue.Entity}");
@@ -372,10 +376,11 @@ namespace CRMBot.Dialogs
         [LuisIntent("Create")]
         public async Task Create(IDialogContext context, LuisResult result)
         {
+            ChatState chatState = ChatState.RetrieveChatState(channelId, userId);
             EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.EntityType);
             if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
             {
-                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.channelId, this.userId, entityTypeEntity.Entity);
+                EntityMetadata metadata = chatState.RetrieveEntityMetadata(entityTypeEntity.Entity);
                 if (metadata != null)
                 {
                     EntityRecommendation firstName = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.FirstName);
@@ -415,7 +420,7 @@ namespace CRMBot.Dialogs
                             entity["customerid"] = new EntityReference(this.SelectedEntity.LogicalName, this.SelectedEntity.Id);
                         }
                     }
-                    using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.channelId, this.userId))
+                    using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                     {
                         Guid id = serviceProxy.Create(entity);
                         this.SelectedEntity = serviceProxy.Retrieve(entity.LogicalName, id, new ColumnSet(true));
@@ -445,11 +450,12 @@ namespace CRMBot.Dialogs
         [LuisIntent("Locate")]
         public async Task Locate(IDialogContext context, LuisResult result)
         {
+            ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
             string entityDisplayName = this.FindEntity(result, false);
 
             if (this.SelectedEntity != null)
             {
-                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.channelId, this.userId,this.SelectedEntity.LogicalName);
+                EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
                 await context.PostAsync($"I found a {entityDisplayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]} what would you like to do next? You can say {string.Join(" or ", ActionPhrases)}");
             }
             else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
@@ -468,11 +474,12 @@ namespace CRMBot.Dialogs
         public async Task CountRecords(IDialogContext context, LuisResult result)
         {
             string parentEntity = string.Empty;
+            ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
 
             EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.EntityType);
             if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
             {
-                EntityMetadata entityMetadata = CrmHelper.RetrieveEntityMetadata(this.channelId, this.userId, entityTypeEntity.Entity);
+                EntityMetadata entityMetadata = chatState.RetrieveEntityMetadata(entityTypeEntity.Entity);
                 if (entityMetadata != null)
                 {
                     bool associatedEntities = false;
@@ -538,7 +545,7 @@ namespace CRMBot.Dialogs
                             }
                         }
                     }
-                    using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.channelId, this.userId))
+                    using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                     {
                         EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
                         if (collection.Entities != null)
@@ -608,8 +615,8 @@ namespace CRMBot.Dialogs
                     annotation["subject"] = subject;
                     annotation["mimetype"] = "application /octet-stream";
                     annotation["documentbody"] = encodedData;
-
-                    using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.channelId, this.userId))
+                    ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
+                    using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                     {
                         serviceProxy.Create(annotation);
                         await context.PostAsync($"Okay. I've attached the file to {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} as a note with the Subject '{annotation["subject"]}'");
@@ -643,9 +650,10 @@ namespace CRMBot.Dialogs
                     hasMore = this.FilteredEntities.Length > (i + 1);
                     if (entityMetadata == null)
                     {
-                        entityMetadata = CrmHelper.RetrieveEntityMetadata(this.channelId, this.userId,this.FilteredEntities[i].LogicalName);
+                        ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
+                        entityMetadata = chatState.RetrieveEntityMetadata(this.FilteredEntities[i].LogicalName);
 
-                        using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.channelId, this.userId))
+                        using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                         {
                             columns.Add(entityMetadata.PrimaryNameAttribute);
                             QueryExpression expression = new QueryExpression("savedquery");
@@ -724,6 +732,7 @@ namespace CRMBot.Dialogs
         }
         protected string FindEntity(LuisResult result, bool ignoreAttributeNameAndValue)
         {
+
             Entity previouslySelectedEntity = this.SelectedEntity;
 
             string entityDisplayName = string.Empty;
@@ -731,7 +740,8 @@ namespace CRMBot.Dialogs
             EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.EntityType);
             if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
             {
-                EntityMetadata metadata = CrmHelper.RetrieveEntityMetadata(this.channelId, this.userId, entityTypeEntity.Entity);
+                ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
+                EntityMetadata metadata = chatState.RetrieveEntityMetadata(entityTypeEntity.Entity);
                 if (metadata != null)
                 {
                     entityDisplayName = entityTypeEntity.Entity;
@@ -746,7 +756,7 @@ namespace CRMBot.Dialogs
                     EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.AttributeName);
                     EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.AttributeValue);
 
-                    using (OrganizationWebProxyClient serviceProxy = CrmHelper.CreateOrganizationService(this.channelId, this.userId))
+                    using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                     {
                         QueryExpression expression = new QueryExpression(entityTypeEntity.Entity);
                         expression.ColumnSet = new ColumnSet(true);
@@ -852,6 +862,27 @@ namespace CRMBot.Dialogs
                 }
             }
         }
+        public static string ParseCrmUrl(Microsoft.Bot.Connector.Activity message)
+        {
+            if (message.From.Properties.ContainsKey("crmUrl"))
+            {
+                return message.From.Properties["crmUrl"].ToString();
+            }
+            else if (!string.IsNullOrEmpty(message.Text))
+            {
+                var regex = new Regex("<a [^>]*href=(?:'(?<href>.*?)')|(?:\"(?<href>.*?)\")", RegexOptions.IgnoreCase);
+                var urls = regex.Matches(message.Text).OfType<Match>().Select(m => m.Groups["href"].Value).ToList();
+                if (urls.Count > 0)
+                {
+                    return urls[0];
+                }
+                else if (message.Text.ToLower().StartsWith("http") && message.Text.ToLower().Contains(".dynamics.com"))
+                {
+                    return message.Text;
+                }
+            }
+            return string.Empty;
+        }
 
         protected string GetAttributeDisplayValue(LuisResult result, Entity entity, EntityMetadata metadata, string attributeName)
         {
@@ -946,7 +977,8 @@ namespace CRMBot.Dialogs
         {
             get
             {
-                return CrmHelper.RetrieveEntityMetadata(this.channelId, this.userId, this.SelectedEntity.LogicalName);
+                ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
+                return chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
             }
         }
 

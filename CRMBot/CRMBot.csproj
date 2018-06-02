@@ -221,7 +221,6 @@
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="ChatState.cs" />
     <Compile Include="Controllers\MessagesController.cs" />
-    <Compile Include="CrmHelper.cs" />
     <Compile Include="Dialogs\CrmDialog.cs" />
     <Compile Include="Dialogs\LuisResults.cs" />
     <Compile Include="Global.asax.cs">
