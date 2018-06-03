@@ -738,9 +738,8 @@ namespace CRMBot.Dialogs
         }
         protected string FindEntity(LuisResult result, bool ignoreAttributeNameAndValue)
         {
-
             Entity previouslySelectedEntity = this.SelectedEntity;
-
+            this.FilteredEntities = new Entity[] { };
             string entityDisplayName = string.Empty;
             this.SelectedEntity = null;
             EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.EntityType);
@@ -952,11 +951,11 @@ namespace CRMBot.Dialogs
                 string att = result.FindAttributeLogicalName(metadata, attribute.Type);
                 if (!string.IsNullOrEmpty(att))
                 {
-                    expression.Criteria.AddCondition(att, ConditionOperator.Equal, attribute.Entity);
+                    expression.Criteria.AddCondition(att, ConditionOperator.Like, attribute.Entity + "%");
                 }
                 else
                 {
-                    expression.Criteria.AddCondition(metadata.PrimaryNameAttribute, ConditionOperator.Equal, attribute.Entity);
+                    expression.Criteria.AddCondition(metadata.PrimaryNameAttribute, ConditionOperator.Like, attribute.Entity + "%");
                 }
             }
         }
@@ -974,7 +973,7 @@ namespace CRMBot.Dialogs
                 string att = result.FindAttributeLogicalName(entity, attrName);
                 if (!string.IsNullOrEmpty(att))
                 {
-                    expression.Criteria.AddCondition(att, ConditionOperator.Like, "%" + attrValue.Replace(" . ", ".").Replace(" - ", "-").Replace(" @ ", "@") + "%");
+                    expression.Criteria.AddCondition(att, ConditionOperator.Like, "%" + attrValue + "%");
                 }
             }
         }

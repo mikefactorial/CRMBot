@@ -233,13 +233,10 @@
   <ItemGroup>
     <Content Include="packages.config" />
     <Content Include="CRMBotLuis.json" />
-    <Content Include="LuisApps\CRMBotLuisImportable.json" />
-    <Content Include="LuisApps\CRMBot_6_3_2016.json" />
-    <Content Include="LuisApps\CRMBot_6_16_2016.json" />
     <Content Include="Views\Home\Authorize.cshtml" />
-    <Content Include="LuisApps\CRMBot_3_17_2018.json" />
     <Content Include="LuisApps\CRMInator_3_20_2018.json" />
     <Content Include="LuisApps\CRMInator_4_4_2018.json" />
+    <Content Include="LuisApps\CRMInator_6_2_2018.json" />
     <None Include="Properties\PublishProfiles\CRMBot.pubxml" />
     <None Include="Properties\PublishProfiles\crminator - FTP.pubxml" />
     <None Include="Properties\PublishProfiles\crminator - Web Deploy.pubxml" />

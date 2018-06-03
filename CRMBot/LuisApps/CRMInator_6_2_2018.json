@@ -1,7 +1,7 @@
 {
-  "luis_schema_version": "2.1.0",
+  "luis_schema_version": "3.0.0",
   "versionId": "0.1",
-  "name": "CRMBot",
+  "name": "CRMInator",
   "desc": "",
   "culture": "en-us",
   "intents": [
@@ -38,33 +38,43 @@
   ],
   "entities": [
     {
-      "name": "Action"
+      "name": "Action",
+      "roles": []
     },
     {
-      "name": "AttributeName"
+      "name": "AttributeName",
+      "roles": []
     },
     {
-      "name": "AttributeValue"
+      "name": "AttributeValue",
+      "roles": []
     },
     {
-      "name": "DisplayField"
+      "name": "DisplayField",
+      "roles": []
     },
     {
-      "name": "EntityType"
+      "name": "EntityType",
+      "roles": []
     },
     {
       "name": "ContactName",
       "children": [
         "FirstName",
         "LastName"
-      ]
+      ],
+      "roles": []
     }
   ],
   "composites": [],
   "closedLists": [],
-  "bing_entities": [
-    "datetime",
-    "ordinal"
+  "patternAnyEntities": [],
+  "regex_entities": [],
+  "prebuiltEntities": [
+    {
+      "name": "datetimeV2",
+      "roles": []
+    }
   ],
   "model_features": [
     {
@@ -87,6 +97,7 @@
       "activated": true
     }
   ],
+  "patterns": [],
   "utterances": [
     {
       "text": ".help",
@@ -181,7 +192,17 @@
       ]
     },
     {
+      "text": "29",
+      "intent": "None",
+      "entities": []
+    },
+    {
       "text": "3",
+      "intent": "None",
+      "entities": []
+    },
+    {
+      "text": "3.",
       "intent": "None",
       "entities": []
     },
@@ -198,6 +219,11 @@
     },
     {
       "text": "4",
+      "intent": "None",
+      "entities": []
+    },
+    {
+      "text": "5",
       "intent": "None",
       "entities": []
     },
@@ -292,6 +318,17 @@
       ]
     },
     {
+      "text": "attach as headshot.png",
+      "intent": "Attach",
+      "entities": [
+        {
+          "entity": "AttributeValue",
+          "startPos": 10,
+          "endPos": 21
+        }
+      ]
+    },
+    {
       "text": "attach as note",
       "intent": "Attach",
       "entities": [
@@ -343,6 +380,17 @@
           "entity": "AttributeValue",
           "startPos": 10,
           "endPos": 24
+        }
+      ]
+    },
+    {
+      "text": "attach as refund.pdf",
+      "intent": "Attach",
+      "entities": [
+        {
+          "entity": "AttributeValue",
+          "startPos": 10,
+          "endPos": 19
         }
       ]
     },
@@ -597,6 +645,11 @@
       "entities": []
     },
     {
+      "text": "bot say hello to d.c. dynamics devs!",
+      "intent": "None",
+      "entities": []
+    },
+    {
       "text": "bot what's shaking",
       "intent": "None",
       "entities": []
@@ -679,6 +732,22 @@
       ]
     },
     {
+      "text": "cool",
+      "intent": "None",
+      "entities": []
+    },
+    {
+      "text": "count number of tasks last week",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 16,
+          "endPos": 20
+        }
+      ]
+    },
+    {
       "text": "count task",
       "intent": "HowMany",
       "entities": []
@@ -750,6 +819,48 @@
           "entity": "AttributeValue",
           "startPos": 31,
           "endPos": 41
+        }
+      ]
+    },
+    {
+      "text": "create a task with subject follow up",
+      "intent": "Create",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 12
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 19,
+          "endPos": 25
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 27,
+          "endPos": 35
+        }
+      ]
+    },
+    {
+      "text": "create a task with subject tell mary i'm on my way",
+      "intent": "Create",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 12
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 19,
+          "endPos": 25
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 27,
+          "endPos": 49
         }
       ]
     },
@@ -1169,6 +1280,27 @@
       ]
     },
     {
+      "text": "create lead joe jones",
+      "intent": "Create",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 7,
+          "endPos": 10
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 12,
+          "endPos": 14
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 16,
+          "endPos": 20
+        }
+      ]
+    },
+    {
       "text": "create lead john smith",
       "intent": "Create",
       "entities": [
@@ -1584,6 +1716,105 @@
       ]
     },
     {
+      "text": "create phone call with subject \"crminator call\"",
+      "intent": "Create",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 7,
+          "endPos": 11
+        },
+        {
+          "entity": "EntityType",
+          "startPos": 13,
+          "endPos": 16
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 23,
+          "endPos": 29
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 32,
+          "endPos": 40
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 42,
+          "endPos": 45
+        }
+      ]
+    },
+    {
+      "text": "create phone call with subject 'crminator is awesome'",
+      "intent": "Create",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 7,
+          "endPos": 11
+        },
+        {
+          "entity": "EntityType",
+          "startPos": 13,
+          "endPos": 16
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 23,
+          "endPos": 29
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 31,
+          "endPos": 52
+        }
+      ]
+    },
+    {
+      "text": "create task with subject follow up with mary",
+      "intent": "Create",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 7,
+          "endPos": 10
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 17,
+          "endPos": 23
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 25,
+          "endPos": 43
+        }
+      ]
+    },
+    {
+      "text": "create task with subject tell mary i'll talk to her next week",
+      "intent": "Create",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 7,
+          "endPos": 10
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 17,
+          "endPos": 23
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 25,
+          "endPos": 50
+        }
+      ]
+    },
+    {
       "text": "crm bot count contacts and crm",
       "intent": "HowMany",
       "entities": [
@@ -1888,6 +2119,11 @@
           "endPos": 16
         }
       ]
+    },
+    {
+      "text": "exit",
+      "intent": "None",
+      "entities": []
     },
     {
       "text": "find account abb",
@@ -2308,6 +2544,27 @@
       ]
     },
     {
+      "text": "find contact amy abbey",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 13,
+          "endPos": 15
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 17,
+          "endPos": 21
+        }
+      ]
+    },
+    {
       "text": "find contact booper smith",
       "intent": "Locate",
       "entities": [
@@ -2325,6 +2582,27 @@
           "entity": "ContactName::LastName",
           "startPos": 20,
           "endPos": 24
+        }
+      ]
+    },
+    {
+      "text": "find contact chris capistran",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 13,
+          "endPos": 17
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 19,
+          "endPos": 27
         }
       ]
     },
@@ -2581,6 +2859,32 @@
       ]
     },
     {
+      "text": "find contact mary davis",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 13,
+          "endPos": 16
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 18,
+          "endPos": 22
+        }
+      ]
+    },
+    {
       "text": "find contact mary smith",
       "intent": "Locate",
       "entities": [
@@ -2639,6 +2943,27 @@
       ]
     },
     {
+      "text": "find contact michael coley",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 13,
+          "endPos": 19
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 21,
+          "endPos": 25
+        }
+      ]
+    },
+    {
       "text": "find contact michael ochs",
       "intent": "Locate",
       "entities": [
@@ -2672,6 +2997,48 @@
           "entity": "AttributeValue",
           "startPos": 13,
           "endPos": 35
+        }
+      ]
+    },
+    {
+      "text": "find contact mike coley",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 13,
+          "endPos": 16
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 18,
+          "endPos": 22
+        }
+      ]
+    },
+    {
+      "text": "find contact mike cutlip",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 13,
+          "endPos": 16
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 18,
+          "endPos": 23
         }
       ]
     },
@@ -2939,6 +3306,48 @@
       ]
     },
     {
+      "text": "find contacts in state of virginia",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 12
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 17,
+          "endPos": 21
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 26,
+          "endPos": 33
+        }
+      ]
+    },
+    {
+      "text": "find contacts in state virginia",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 12
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 17,
+          "endPos": 21
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 23,
+          "endPos": 30
+        }
+      ]
+    },
+    {
       "text": "find contacts in the city of alexandria",
       "intent": "Locate",
       "entities": [
@@ -2977,6 +3386,32 @@
           "entity": "AttributeValue",
           "startPos": 29,
           "endPos": 38
+        }
+      ]
+    },
+    {
+      "text": "find contacts with first name michael",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 12
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 5,
+          "endPos": 12
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 19,
+          "endPos": 28
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 30,
+          "endPos": 36
         }
       ]
     },
@@ -3291,6 +3726,27 @@
       ]
     },
     {
+      "text": "find lead lon orenson",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 8
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 10,
+          "endPos": 12
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 14,
+          "endPos": 20
+        }
+      ]
+    },
+    {
       "text": "find lead melanie ochs",
       "intent": "Locate",
       "entities": [
@@ -3533,6 +3989,85 @@
       ]
     },
     {
+      "text": "find leads where first name is michael",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 9
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 5,
+          "endPos": 9
+        }
+      ]
+    },
+    {
+      "text": "find leads where subject is iq",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 9
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 17,
+          "endPos": 23
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 28,
+          "endPos": 29
+        }
+      ]
+    },
+    {
+      "text": "find leads where topic is \"iq\"",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 9
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 17,
+          "endPos": 21
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 27,
+          "endPos": 28
+        }
+      ]
+    },
+    {
+      "text": "find leads where topic is iq",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 9
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 17,
+          "endPos": 21
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 26,
+          "endPos": 27
+        }
+      ]
+    },
+    {
       "text": "find leaf ayush",
       "intent": "Locate",
       "entities": [
@@ -3656,6 +4191,27 @@
           "entity": "AttributeValue",
           "startPos": 23,
           "endPos": 39
+        }
+      ]
+    },
+    {
+      "text": "find michael ochs",
+      "intent": "Locate",
+      "entities": [
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 13,
+          "endPos": 16
         }
       ]
     },
@@ -4571,7 +5127,43 @@
       "entities": []
     },
     {
+      "text": "follow up with michael ochs next thursday",
+      "intent": "FollowUp",
+      "entities": [
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 15,
+          "endPos": 21
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 23,
+          "endPos": 26
+        }
+      ]
+    },
+    {
+      "text": "follow up with mike next thursday",
+      "intent": "FollowUp",
+      "entities": []
+    },
+    {
       "text": "follow up with mike next tuesday",
+      "intent": "FollowUp",
+      "entities": []
+    },
+    {
+      "text": "follow up with mike next week",
+      "intent": "FollowUp",
+      "entities": []
+    },
+    {
+      "text": "follow up with mike two weeks from now",
+      "intent": "FollowUp",
+      "entities": []
+    },
+    {
+      "text": "follow up with rachel next tuesday",
       "intent": "FollowUp",
       "entities": []
     },
@@ -4698,6 +5290,11 @@
     },
     {
       "text": "forget the mirror",
+      "intent": "None",
+      "entities": []
+    },
+    {
+      "text": "forget this",
       "intent": "None",
       "entities": []
     },
@@ -4975,6 +5572,11 @@
       ]
     },
     {
+      "text": "gjdjd",
+      "intent": "None",
+      "entities": []
+    },
+    {
       "text": "good bot",
       "intent": "None",
       "entities": []
@@ -5051,12 +5653,22 @@
       "entities": []
     },
     {
+      "text": "helo",
+      "intent": "None",
+      "entities": []
+    },
+    {
       "text": "help",
       "intent": "None",
       "entities": []
     },
     {
       "text": "hey",
+      "intent": "None",
+      "entities": []
+    },
+    {
+      "text": "hey bot",
       "intent": "None",
       "entities": []
     },
@@ -5140,6 +5752,11 @@
     },
     {
       "text": "hi how are you doing bot",
+      "intent": "None",
+      "entities": []
+    },
+    {
+      "text": "hi it's emmy",
       "intent": "None",
       "entities": []
     },
@@ -5472,6 +6089,38 @@
       ]
     },
     {
+      "text": "how many contact were created this month",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 15
+        },
+        {
+          "entity": "Action",
+          "startPos": 22,
+          "endPos": 28
+        }
+      ]
+    },
+    {
+      "text": "how many contact were created this week",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 15
+        },
+        {
+          "entity": "Action",
+          "startPos": 22,
+          "endPos": 28
+        }
+      ]
+    },
+    {
       "text": "how many contacts",
       "intent": "HowMany",
       "entities": [
@@ -5558,6 +6207,17 @@
       ]
     },
     {
+      "text": "how many contacts this week?",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 16
+        }
+      ]
+    },
+    {
       "text": "how many contacts this year",
       "intent": "HowMany",
       "entities": [
@@ -5580,6 +6240,22 @@
       ]
     },
     {
+      "text": "how many contacts were created this week?",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 16
+        },
+        {
+          "entity": "Action",
+          "startPos": 23,
+          "endPos": 29
+        }
+      ]
+    },
+    {
       "text": "how many contacts were created two weeks ago?",
       "intent": "HowMany",
       "entities": [
@@ -5596,6 +6272,27 @@
       ]
     },
     {
+      "text": "how many contacts with state of virginia",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 16
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 23,
+          "endPos": 27
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 32,
+          "endPos": 39
+        }
+      ]
+    },
+    {
       "text": "how many crm organizations created this week?",
       "intent": "HowMany",
       "entities": [
@@ -5608,6 +6305,17 @@
           "entity": "Action",
           "startPos": 27,
           "endPos": 33
+        }
+      ]
+    },
+    {
+      "text": "how many email for michael?",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 13
         }
       ]
     },
@@ -5635,6 +6343,17 @@
     },
     {
       "text": "how many emails does susan have?",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 14
+        }
+      ]
+    },
+    {
+      "text": "how many emails for mike",
       "intent": "HowMany",
       "entities": [
         {
@@ -5700,6 +6419,54 @@
     },
     {
       "text": "how many leads created his week",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 13
+        },
+        {
+          "entity": "Action",
+          "startPos": 15,
+          "endPos": 21
+        }
+      ]
+    },
+    {
+      "text": "how many leads created last monday?",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 13
+        },
+        {
+          "entity": "Action",
+          "startPos": 15,
+          "endPos": 21
+        }
+      ]
+    },
+    {
+      "text": "how many leads created last week",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 13
+        },
+        {
+          "entity": "Action",
+          "startPos": 15,
+          "endPos": 21
+        }
+      ]
+    },
+    {
+      "text": "how many leads created last week?",
       "intent": "HowMany",
       "entities": [
         {
@@ -5795,6 +6562,22 @@
       ]
     },
     {
+      "text": "how many leads created this week?",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 13
+        },
+        {
+          "entity": "Action",
+          "startPos": 15,
+          "endPos": 21
+        }
+      ]
+    },
+    {
       "text": "how many leads created this year",
       "intent": "HowMany",
       "entities": [
@@ -5812,6 +6595,22 @@
     },
     {
       "text": "how many leads created today",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 13
+        },
+        {
+          "entity": "Action",
+          "startPos": 15,
+          "endPos": 21
+        }
+      ]
+    },
+    {
+      "text": "how many leads created today?",
       "intent": "HowMany",
       "entities": [
         {
@@ -6232,6 +7031,22 @@
       ]
     },
     {
+      "text": "how many leads were created yesterday?",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 13
+        },
+        {
+          "entity": "Action",
+          "startPos": 20,
+          "endPos": 26
+        }
+      ]
+    },
+    {
       "text": "how many leads were updated this week?",
       "intent": "HowMany",
       "entities": [
@@ -6244,6 +7059,48 @@
           "entity": "Action",
           "startPos": 20,
           "endPos": 26
+        }
+      ]
+    },
+    {
+      "text": "how many leads with first name = michael",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 13
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 20,
+          "endPos": 29
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 33,
+          "endPos": 39
+        }
+      ]
+    },
+    {
+      "text": "how many leads with first name michael",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 13
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 20,
+          "endPos": 29
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 31,
+          "endPos": 37
         }
       ]
     },
@@ -6761,6 +7618,22 @@
       ]
     },
     {
+      "text": "how many opportunities were created this week?",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 21
+        },
+        {
+          "entity": "Action",
+          "startPos": 28,
+          "endPos": 34
+        }
+      ]
+    },
+    {
       "text": "how many opportunities were updated today?",
       "intent": "HowMany",
       "entities": [
@@ -7016,6 +7889,17 @@
       ]
     },
     {
+      "text": "how many tasks does amy have?",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 13
+        }
+      ]
+    },
+    {
       "text": "how many tasks does like have",
       "intent": "HowMany",
       "entities": [
@@ -7127,6 +8011,17 @@
     },
     {
       "text": "how many tasks does susan jones",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 9,
+          "endPos": 13
+        }
+      ]
+    },
+    {
+      "text": "how many tasks for michael?",
       "intent": "HowMany",
       "entities": [
         {
@@ -7439,6 +8334,11 @@
           "endPos": 37
         }
       ]
+    },
+    {
+      "text": "later",
+      "intent": "None",
+      "entities": []
     },
     {
       "text": "locate account extremecrm",
@@ -7983,6 +8883,11 @@
       "entities": []
     },
     {
+      "text": "nexyx",
+      "intent": "None",
+      "entities": []
+    },
+    {
       "text": "nice work crm bot",
       "intent": "None",
       "entities": []
@@ -8014,6 +8919,11 @@
     },
     {
       "text": "okay thanks bo",
+      "intent": "None",
+      "entities": []
+    },
+    {
+      "text": "oops",
       "intent": "None",
       "entities": []
     },
@@ -8123,6 +9033,11 @@
       "entities": []
     },
     {
+      "text": "open chris's record",
+      "intent": "Open",
+      "entities": []
+    },
+    {
       "text": "open contact",
       "intent": "Open",
       "entities": [
@@ -8197,7 +9112,49 @@
       ]
     },
     {
+      "text": "open contact mark nold",
+      "intent": "Open",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 13,
+          "endPos": 16
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 18,
+          "endPos": 21
+        }
+      ]
+    },
+    {
       "text": "open contact michael ochs",
+      "intent": "Open",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 13,
+          "endPos": 19
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 21,
+          "endPos": 24
+        }
+      ]
+    },
+    {
+      "text": "open contact michael ochs record",
       "intent": "Open",
       "entities": [
         {
@@ -8517,6 +9474,43 @@
       "entities": []
     },
     {
+      "text": "open mary's record",
+      "intent": "Open",
+      "entities": []
+    },
+    {
+      "text": "open melanie ochs",
+      "intent": "Open",
+      "entities": [
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 13,
+          "endPos": 16
+        }
+      ]
+    },
+    {
+      "text": "open michael ochs record",
+      "intent": "Open",
+      "entities": [
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 5,
+          "endPos": 11
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 13,
+          "endPos": 16
+        }
+      ]
+    },
+    {
       "text": "open mike's record",
       "intent": "Open",
       "entities": []
@@ -8585,6 +9579,11 @@
     },
     {
       "text": "previous",
+      "intent": "None",
+      "entities": []
+    },
+    {
+      "text": "quit",
       "intent": "None",
       "entities": []
     },
@@ -8690,6 +9689,11 @@
     },
     {
       "text": "say hello bot",
+      "intent": "None",
+      "entities": []
+    },
+    {
+      "text": "say hello to d.c. dynamics devs",
       "intent": "None",
       "entities": []
     },
@@ -9315,6 +10319,22 @@
       ]
     },
     {
+      "text": "set business phone to 345-345-3456",
+      "intent": "Update",
+      "entities": [
+        {
+          "entity": "AttributeName",
+          "startPos": 4,
+          "endPos": 17
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 22,
+          "endPos": 33
+        }
+      ]
+    },
+    {
       "text": "show account starbucks address",
       "intent": "Display",
       "entities": [
@@ -9348,6 +10368,28 @@
           "entity": "DisplayField",
           "startPos": 15,
           "endPos": 27
+        }
+      ]
+    },
+    {
+      "text": "show address",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 5,
+          "endPos": 11
+        }
+      ]
+    },
+    {
+      "text": "show address 1: state",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "AttributeName",
+          "startPos": 5,
+          "endPos": 20
         }
       ]
     },
@@ -9485,6 +10527,38 @@
       ]
     },
     {
+      "text": "show contacts address",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 12
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 14,
+          "endPos": 20
+        }
+      ]
+    },
+    {
+      "text": "show contacts state",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 5,
+          "endPos": 12
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 14,
+          "endPos": 18
+        }
+      ]
+    },
+    {
       "text": "show createdon",
       "intent": "Display",
       "entities": [
@@ -9591,6 +10665,27 @@
           "entity": "DisplayField",
           "startPos": 20,
           "endPos": 32
+        }
+      ]
+    },
+    {
+      "text": "show mark nold's email address",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 5,
+          "endPos": 8
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 10,
+          "endPos": 13
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 17,
+          "endPos": 29
         }
       ]
     },
@@ -9735,6 +10830,32 @@
           "entity": "DisplayField",
           "startPos": 32,
           "endPos": 38
+        }
+      ]
+    },
+    {
+      "text": "show me contact brian machi's email address",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 8,
+          "endPos": 14
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 16,
+          "endPos": 20
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 22,
+          "endPos": 26
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 30,
+          "endPos": 42
         }
       ]
     },
@@ -9917,6 +11038,58 @@
           "entity": "DisplayField",
           "startPos": 28,
           "endPos": 32
+        }
+      ]
+    },
+    {
+      "text": "show me contact mark nold's email address",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 8,
+          "endPos": 14
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 16,
+          "endPos": 19
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 21,
+          "endPos": 24
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 28,
+          "endPos": 40
+        }
+      ]
+    },
+    {
+      "text": "show me contact mary davis contactid",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 8,
+          "endPos": 14
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 16,
+          "endPos": 19
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 21,
+          "endPos": 25
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 27,
+          "endPos": 35
         }
       ]
     },
@@ -10155,6 +11328,32 @@
       ]
     },
     {
+      "text": "show me contact ryan casey's email address",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 8,
+          "endPos": 14
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 16,
+          "endPos": 19
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 21,
+          "endPos": 25
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 29,
+          "endPos": 41
+        }
+      ]
+    },
+    {
       "text": "show me contact susan jones' email address",
       "intent": "Display",
       "entities": [
@@ -10181,7 +11380,45 @@
       ]
     },
     {
+      "text": "show me created date",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "AttributeName",
+          "startPos": 8,
+          "endPos": 14
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 16,
+          "endPos": 19
+        }
+      ]
+    },
+    {
+      "text": "show me createdon",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 8,
+          "endPos": 16
+        }
+      ]
+    },
+    {
       "text": "show me date created",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 8,
+          "endPos": 19
+        }
+      ]
+    },
+    {
+      "text": "show me date created?",
       "intent": "Display",
       "entities": [
         {
@@ -10576,6 +11813,22 @@
       ]
     },
     {
+      "text": "show me leads created last week",
+      "intent": "HowMany",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 8,
+          "endPos": 12
+        },
+        {
+          "entity": "Action",
+          "startPos": 14,
+          "endPos": 20
+        }
+      ]
+    },
+    {
       "text": "show me leads created this month email address",
       "intent": "Display",
       "entities": [
@@ -10593,6 +11846,17 @@
           "entity": "DisplayField",
           "startPos": 33,
           "endPos": 45
+        }
+      ]
+    },
+    {
+      "text": "show me mary's contactid",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 23
         }
       ]
     },
@@ -10739,6 +12003,39 @@
       ]
     },
     {
+      "text": "show me mike's business phone",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 28
+        }
+      ]
+    },
+    {
+      "text": "show me mike's date created?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 26
+        }
+      ]
+    },
+    {
+      "text": "show me mike's email address",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 27
+        }
+      ]
+    },
+    {
       "text": "show me mikes status",
       "intent": "Display",
       "entities": [
@@ -10860,6 +12157,28 @@
       ]
     },
     {
+      "text": "show me tasks",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 8,
+          "endPos": 12
+        }
+      ]
+    },
+    {
+      "text": "show me the due date",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "AttributeName",
+          "startPos": 12,
+          "endPos": 19
+        }
+      ]
+    },
+    {
       "text": "show me the mobile phone",
       "intent": "Display",
       "entities": [
@@ -10893,6 +12212,17 @@
       ]
     },
     {
+      "text": "show michael's address",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 21
+        }
+      ]
+    },
+    {
       "text": "show michael's createdon",
       "intent": "Display",
       "entities": [
@@ -10900,6 +12230,17 @@
           "entity": "DisplayField",
           "startPos": 15,
           "endPos": 23
+        }
+      ]
+    },
+    {
+      "text": "show michael's home phone",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 24
         }
       ]
     },
@@ -10948,6 +12289,28 @@
       ]
     },
     {
+      "text": "show primary contact",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "AttributeValue",
+          "startPos": 5,
+          "endPos": 19
+        }
+      ]
+    },
+    {
+      "text": "show street 1",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 5,
+          "endPos": 12
+        }
+      ]
+    },
+    {
       "text": "slow me email address",
       "intent": "Display",
       "entities": [
@@ -10985,6 +12348,11 @@
     },
     {
       "text": "thanks",
+      "intent": "None",
+      "entities": []
+    },
+    {
+      "text": "thanks bot",
       "intent": "None",
       "entities": []
     },
@@ -11653,6 +13021,22 @@
       ]
     },
     {
+      "text": "update home phone to 234-234-2345",
+      "intent": "Update",
+      "entities": [
+        {
+          "entity": "AttributeName",
+          "startPos": 7,
+          "endPos": 16
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 21,
+          "endPos": 32
+        }
+      ]
+    },
+    {
       "text": "update lead jack johnson's home phone to 456-456-4567",
       "intent": "Update",
       "entities": [
@@ -12094,6 +13478,27 @@
       ]
     },
     {
+      "text": "update lead set phone to 123-123-1234",
+      "intent": "Update",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 7,
+          "endPos": 10
+        },
+        {
+          "entity": "AttributeName",
+          "startPos": 16,
+          "endPos": 20
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 25,
+          "endPos": 36
+        }
+      ]
+    },
+    {
       "text": "update lead set topic to great new lead",
       "intent": "Update",
       "entities": [
@@ -12201,6 +13606,22 @@
           "entity": "AttributeValue",
           "startPos": 31,
           "endPos": 42
+        }
+      ]
+    },
+    {
+      "text": "update mike's email address to mike@cobalt.net",
+      "intent": "Update",
+      "entities": [
+        {
+          "entity": "AttributeName",
+          "startPos": 14,
+          "endPos": 26
+        },
+        {
+          "entity": "AttributeValue",
+          "startPos": 31,
+          "endPos": 45
         }
       ]
     },
@@ -12495,6 +13916,43 @@
       ]
     },
     {
+      "text": "what is chris's email address?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 16,
+          "endPos": 28
+        }
+      ]
+    },
+    {
+      "text": "what is contact chris capistran's email address?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 8,
+          "endPos": 14
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 16,
+          "endPos": 20
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 22,
+          "endPos": 30
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 34,
+          "endPos": 46
+        }
+      ]
+    },
+    {
       "text": "what is contact henry jeffery's parent customer?",
       "intent": "Display",
       "entities": [
@@ -12573,6 +14031,84 @@
       ]
     },
     {
+      "text": "what is contact mary davis contactid",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 8,
+          "endPos": 14
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 16,
+          "endPos": 19
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 21,
+          "endPos": 25
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 27,
+          "endPos": 35
+        }
+      ]
+    },
+    {
+      "text": "what is contact michael ochs contactid",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 8,
+          "endPos": 14
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 16,
+          "endPos": 22
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 24,
+          "endPos": 27
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 29,
+          "endPos": 37
+        }
+      ]
+    },
+    {
+      "text": "what is contact michael ochs email address?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 8,
+          "endPos": 14
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 16,
+          "endPos": 22
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 24,
+          "endPos": 27
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 29,
+          "endPos": 41
+        }
+      ]
+    },
+    {
       "text": "what is contact michael ochs' phone number",
       "intent": "Display",
       "entities": [
@@ -12595,6 +14131,32 @@
           "entity": "DisplayField",
           "startPos": 30,
           "endPos": 41
+        }
+      ]
+    },
+    {
+      "text": "what is contact michael ochs phone number?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "EntityType",
+          "startPos": 8,
+          "endPos": 14
+        },
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 16,
+          "endPos": 22
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 24,
+          "endPos": 27
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 29,
+          "endPos": 40
         }
       ]
     },
@@ -13224,6 +14786,50 @@
       ]
     },
     {
+      "text": "what is mark's email address?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 27
+        }
+      ]
+    },
+    {
+      "text": "what is mary's contactid",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 23
+        }
+      ]
+    },
+    {
+      "text": "what is mary's contactid?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 23
+        }
+      ]
+    },
+    {
+      "text": "what is mary's email address?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 27
+        }
+      ]
+    },
+    {
       "text": "what is melanie ochs's phone number?",
       "intent": "Display",
       "entities": [
@@ -13252,6 +14858,27 @@
           "entity": "DisplayField",
           "startPos": 18,
           "endPos": 26
+        }
+      ]
+    },
+    {
+      "text": "what is michael ochs business phone",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "ContactName::FirstName",
+          "startPos": 8,
+          "endPos": 14
+        },
+        {
+          "entity": "ContactName::LastName",
+          "startPos": 16,
+          "endPos": 19
+        },
+        {
+          "entity": "DisplayField",
+          "startPos": 21,
+          "endPos": 34
         }
       ]
     },
@@ -13311,6 +14938,39 @@
       ]
     },
     {
+      "text": "what is mike's company name",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 26
+        }
+      ]
+    },
+    {
+      "text": "what is mike's company name?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 26
+        }
+      ]
+    },
+    {
+      "text": "what is mike's contactid?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 23
+        }
+      ]
+    },
+    {
       "text": "what is mikes email address",
       "intent": "Display",
       "entities": [
@@ -13318,6 +14978,28 @@
           "entity": "DisplayField",
           "startPos": 14,
           "endPos": 26
+        }
+      ]
+    },
+    {
+      "text": "what is mike's email address",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 27
+        }
+      ]
+    },
+    {
+      "text": "what is mike's email address?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 27
         }
       ]
     },
@@ -13344,6 +15026,28 @@
       ]
     },
     {
+      "text": "what is mike's parentcustomerid",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 30
+        }
+      ]
+    },
+    {
+      "text": "what is mike's phone number?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 26
+        }
+      ]
+    },
+    {
       "text": "what is mikes status",
       "intent": "Display",
       "entities": [
@@ -13351,6 +15055,39 @@
           "entity": "DisplayField",
           "startPos": 14,
           "endPos": 19
+        }
+      ]
+    },
+    {
+      "text": "what is mike's status?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 15,
+          "endPos": 20
+        }
+      ]
+    },
+    {
+      "text": "what is rachels email address?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 16,
+          "endPos": 28
+        }
+      ]
+    },
+    {
+      "text": "what is rachel's last name?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 17,
+          "endPos": 25
         }
       ]
     },
@@ -13496,6 +15233,17 @@
       ]
     },
     {
+      "text": "what's mary's contactid",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "DisplayField",
+          "startPos": 14,
+          "endPos": 22
+        }
+      ]
+    },
+    {
       "text": "what's mike ochs phone number",
       "intent": "Display",
       "entities": [
@@ -13574,6 +15322,17 @@
       "entities": []
     },
     {
+      "text": "when was rachel created?",
+      "intent": "Display",
+      "entities": [
+        {
+          "entity": "AttributeName",
+          "startPos": 16,
+          "endPos": 22
+        }
+      ]
+    },
+    {
       "text": "where is cat sox",
       "intent": "Locate",
       "entities": [
@@ -13588,6 +15347,11 @@
           "endPos": 15
         }
       ]
+    },
+    {
+      "text": "you ready bot?",
+      "intent": "None",
+      "entities": []
     }
   ]
 }

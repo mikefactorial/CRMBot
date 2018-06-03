@@ -307,7 +307,7 @@ namespace CRMBot.Dialogs
                     {
                         bestEntity.Entity = bestEntity.Entity.Replace(" ", string.Empty);
                     }
-                    bestEntity.Entity = bestEntity.Entity.Replace("'s", string.Empty).Replace(" '", string.Empty).Replace("' ", string.Empty).Replace(" - ", "-").Replace(" . ", ".").Replace(" / ", "/");
+                    bestEntity.Entity = bestEntity.Entity.Replace("'s", string.Empty).Replace(" '", string.Empty).Replace("' ", string.Empty).Replace(" - ", "-").Replace(" . ", ".").Replace(" / ", "/").Replace(" ,", ",");
                 }
                 else if (bestEntity.Type == EntityTypeNames.EntityType.EntityTypeName)
                 {
@@ -339,6 +339,14 @@ namespace CRMBot.Dialogs
                     if (values.ContainsKey("end") && DateTime.TryParse(values["end"].ToString(), out end))
                     {
                         ret.Add(end);
+                    }
+                }
+                else if (values.ContainsKey("value"))
+                {
+                    DateTime value;
+                    if (DateTime.TryParse(values["value"].ToString(), out value))
+                    {
+                        ret.Add(value);
                     }
                 }
             }
