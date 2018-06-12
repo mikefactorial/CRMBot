@@ -33,6 +33,15 @@
                 resize: 'detect'
             }, document.getElementById("bot"));
 
+            botConnection
+                .postActivity({
+                    from: { id: 'CRM', crmUrl: _getContext().getClientUrl() },
+                    name: 'requestWelcomeDialog',
+                    text: 'Hello',
+                    type: 'message',
+                    value: 'Hello'
+                }).subscribe();
+
             botConnection.activity$
                 .filter(_isOpenUrlEvent)
                 .subscribe(_openPage);
@@ -50,16 +59,21 @@
             }
 
             function _openPage(activity) {
-                Xrm.Navigation.openUrl(activity.text)
+                if (activity !== undefined && activity != null) {
+                    //document.getElementById('loginWindow').src = activity.text;
+                    Xrm.Navigation.openUrl(activity.text)
+                }
             }
 
             function _openForm(activity) {
-                var opts = activity.text.split("|")
-                var entityFormOptions = {};
-                entityFormOptions["entityName"] = opts[0];
-                entityFormOptions["entityId"] = opts[1];
-                entityFormOptions["openInNewWindow"] = true;
-                Xrm.Navigation.openForm(entityFormOptions);
+                if (activity !== undefined && activity != null) {
+                    var opts = activity.text.split("|")
+                    var entityFormOptions = {};
+                    entityFormOptions["entityName"] = opts[0];
+                    entityFormOptions["entityId"] = opts[1];
+                    entityFormOptions["openInNewWindow"] = true;
+                    Xrm.Navigation.openForm(entityFormOptions);
+                }
             }
 
     </script>
