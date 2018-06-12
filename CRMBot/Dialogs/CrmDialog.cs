@@ -163,11 +163,12 @@ namespace CRMBot.Dialogs
                     await context.PostAsync(defaultMessage);
                 }
             }
+
             else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
             {
                 EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.FilteredEntities[0].LogicalName);
                 string displayName = RetrieveEntityDisplayName(metadata, true);
-                await context.PostAsync($"Hmmm...I couldn't find that record. These are the currently selected {displayName}\r\n{this.BuildFilteredEntitiesList(result)}");
+                this.BuildFilteredEntitiesList(context, result, "$Hmmm...I couldn't find that record. These are the currently selected {displayName}");
             }
             else
             {
@@ -239,8 +240,7 @@ namespace CRMBot.Dialogs
             else if (result.Query.ToLower().StartsWith("next"))
             {
                 this.CurrentPageIndex = this.CurrentPageIndex + 1;
-                string filteredEntitiesList = this.BuildFilteredEntitiesList(result);
-                await context.PostAsync($"{filteredEntitiesList}");
+                BuildFilteredEntitiesList(context, result, "Select a record from the list below");
             }
             else if (result.Query.ToLower().StartsWith("back"))
             {
@@ -248,8 +248,7 @@ namespace CRMBot.Dialogs
                 {
                     this.CurrentPageIndex = this.CurrentPageIndex - 1;
                 }
-                string filteredEntitiesList = this.BuildFilteredEntitiesList(result);
-                await context.PostAsync($"{filteredEntitiesList}");
+                this.BuildFilteredEntitiesList(context, result, "Select a record from the list below");
             }
             else if (result.Query.ToLower().StartsWith("help"))
             {
@@ -466,8 +465,7 @@ namespace CRMBot.Dialogs
             }
             else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
             {
-                string filteredEntitiesList = this.BuildFilteredEntitiesList(result);
-                await context.PostAsync($"I found {this.FilteredEntities.Length} {entityDisplayName} that match. To select one say a number below.\r\n{filteredEntitiesList}");
+                this.BuildFilteredEntitiesList(context, result, $"I found {this.FilteredEntities.Length} {entityDisplayName} that match. Select a record from the list below");
             }
             else
             {
@@ -560,14 +558,13 @@ namespace CRMBot.Dialogs
                             string displayName = RetrieveEntityDisplayName(entityMetadata, this.FilteredEntities.Length != 1);
                             string selectedEntityDisplayName = RetrieveEntityDisplayName(entityMetadata, false);
 
-                            string filteredEntitiesList = this.BuildFilteredEntitiesList(result);
                             if (associatedEntities)
                             {
-                                await context.PostAsync($"I found {collection.Entities.Count} {displayName} for the {selectedEntityDisplayName} {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} {whenString}\r\n{filteredEntitiesList}");
+                                this.BuildFilteredEntitiesList(context, result, $"I found {collection.Entities.Count} {displayName} for the {selectedEntityDisplayName} {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} {whenString}");
                             }
                             else
                             {
-                                await context.PostAsync($"I found {collection.Entities.Count} {displayName} {whenString} in Dynamics.\r\n{filteredEntitiesList}");
+                                this.BuildFilteredEntitiesList(context, result, $"I found {collection.Entities.Count} {displayName} {whenString} in Dynamics.");
                             }
                         }
                     }
@@ -638,8 +635,10 @@ namespace CRMBot.Dialogs
             return string.Join(" or ", phrases);
         }
 
-        protected string BuildFilteredEntitiesList(LuisResult result)
+        protected async void BuildFilteredEntitiesList(IDialogContext context, LuisResult result, string titleMessage)
         {
+            List<Microsoft.Bot.Connector.CardAction> cardButtons = new List<Microsoft.Bot.Connector.CardAction>();
+
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             if (this.FilteredEntities != null)
             {
@@ -693,48 +692,94 @@ namespace CRMBot.Dialogs
                             }
                         }
                     }
-                    sb.Append($"{i + 1}. ");
+
+                    StringBuilder cardText = new StringBuilder($"");
                     for (int j = 0; j < columns.Count; j++)
                     {
                         string column = columns[j];
                         string displayValue = this.GetAttributeDisplayValue(result, this.FilteredEntities[i], entityMetadata, column);
                         if (j == 1)
                         {
-                            sb.Append("(");
+                            cardText.Append("(");
                         }
                         if (!string.IsNullOrEmpty(displayValue))
                         {
                             if (j > 1)
                             {
-                                sb.Append(", ");
+                                cardText.Append(", ");
                             }
-                            sb.Append(displayValue);
+                            cardText.Append(displayValue);
                         }
                     }
                     if (columns.Count > 1)
                     {
-                        sb.Append(")");
+                        cardText.Append(")");
                     }
-                    sb.Append("\r\n");
+
+                    Microsoft.Bot.Connector.CardAction cityBtn1 = new Microsoft.Bot.Connector.CardAction()
+                    {
+                        Value = (i + 1).ToString(),
+                        Type = "postBack",
+                        Title = cardText.ToString()
+                    };
+
+                    cardButtons.Add(cityBtn1);
                 }
                 if (hasMore)
                 {
                     if (start == 0)
                     {
-                        sb.Append("...('next')");
+                        Microsoft.Bot.Connector.CardAction cityBtn1 = new Microsoft.Bot.Connector.CardAction()
+                        {
+                            Value = "next",
+                            Type = "postBack",
+                            Title = "Show Next Page..."
+                        };
+
+                        cardButtons.Add(cityBtn1);
                     }
                     else
                     {
-                        sb.Append("('back')...('next')");
+                        Microsoft.Bot.Connector.CardAction backButton = new Microsoft.Bot.Connector.CardAction()
+                        {
+                            Value = "back",
+                            Type = "postBack",
+                            Title = "Show Previous Page..."
+                        };
+
+                        cardButtons.Add(backButton);
+                        Microsoft.Bot.Connector.CardAction nextButton = new Microsoft.Bot.Connector.CardAction()
+                        {
+                            Value = "next",
+                            Type = "postBack",
+                            Title = "Show Next Page..."
+                        };
+
+                        cardButtons.Add(nextButton);
                     }
                 }
                 else if(start > 0)
                 {
-                    sb.Append("('back')...");
+                    Microsoft.Bot.Connector.CardAction backButton = new Microsoft.Bot.Connector.CardAction()
+                    {
+                        Value = "back",
+                        Type = "postBack",
+                        Title = "Show Previous Page..."
+                    };
+
+                    cardButtons.Add(backButton);
                 }
             }
 
-            return sb.ToString();
+            Microsoft.Bot.Connector.ReceiptCard plCard = new Microsoft.Bot.Connector.ReceiptCard()
+            {
+                Title = titleMessage,
+                Buttons = cardButtons
+            };
+
+            var message = context.MakeMessage();
+            message.Attachments.Add(Microsoft.Bot.Connector.Extensions.ToAttachment(plCard));
+            await context.PostAsync(message);
         }
         protected string FindEntity(LuisResult result, bool ignoreAttributeNameAndValue)
         {
