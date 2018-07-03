@@ -8,7 +8,14 @@
 <head>
     <meta name="viewport" content="width=device-width" />
     <title></title>
-    <script>window.close();</script>
+    <script>
+        if (window.top !== window.self) { // is the outermost document not this document?
+            window.parent.postMessage("", "*");
+        }
+        else {
+            window.close();
+        }
+    </script>
 </head>
 <body>
     <div>

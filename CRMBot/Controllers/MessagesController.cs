@@ -71,9 +71,9 @@ namespace CRMBot
                         string extraQueryParams = string.Empty;
                         if (crmUrl != string.Empty && state.OrganizationUrl != crmUrl)
                         {
-                            if (!string.IsNullOrEmpty(state.OrganizationUrl))
+                            if (!string.IsNullOrEmpty(state.OrganizationUrl) && state.OrganizationUrl != crmUrl)
                             {
-                                extraQueryParams = "prompt=login";
+                                //extraQueryParams = HttpUtility.UrlEncode("prompt=login");
                             }
                             state.OrganizationUrl = crmUrl;
                         }

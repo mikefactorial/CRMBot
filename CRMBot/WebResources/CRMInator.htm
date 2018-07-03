@@ -4,16 +4,24 @@
         <script type="text/javascript" src="ClientGlobalContext.js.aspx"></script>
         <script src="https://cdn.botframework.com/botframework-webchat/latest/botchat.js"></script>
     </head>
-    <body style="word-wrap: break-word;"> 
-        <div id="bot"></div>
+    <body style="word-wrap: break-word;">
+        <div id="ssoDiv" style="clear:both"><iframe id="ssoIframe" style="display:none; width:100%; height: 500px;"></iframe></div>
+        
+        <div id="bot" style="clear:both"></div>
         <script>
+            window.addEventListener("message", receiveMessage, false);
+
+            function receiveMessage(event) {
+                //Xrm.Utility.alertDialog('Message received');
+                //document.getElementById('bot').style.display = "";
+                //document.getElementById('ssoIframe').style.display = "none";
+            }
             function _getContext() {
                 var errorMessage = "Context is not available.";
                 if (typeof GetGlobalContext != "undefined") {
                     return GetGlobalContext();
                 }
-                else
-                {
+                else {
                     if (typeof Xrm != "undefined") {
                         return Xrm.Page.context;
                     }
@@ -28,7 +36,7 @@
             });
             BotChat.App({
                 botConnection: botConnection,
-                user: { id: 'CRM', crmUrl: _getContext().getClientUrl()},
+                user: { id: 'CRM', crmUrl: _getContext().getClientUrl() },
                 bot: { id: 'CRMInator' },
                 resize: 'detect'
             }, document.getElementById("bot"));
@@ -60,8 +68,12 @@
 
             function _openPage(activity) {
                 if (activity !== undefined && activity != null) {
-                    //document.getElementById('loginWindow').src = activity.text;
-                    Xrm.Navigation.openUrl(activity.text)
+                    //document.getElementById('bot').style.display = "none";
+                    //document.getElementById('ssoIframe').style.display = "";
+                    //Xrm.Utility.alertDialog(activity.text);
+                    //document.getElementById('ssoIframe').src = activity.text;
+                    //document.getElementById('ssoIframe').reload
+                    Xrm.Navigation.openUrl(activity.text, )
                 }
             }
 
@@ -76,6 +88,6 @@
                 }
             }
 
-    </script>
-  
-</body></html>
+        </script>
+
+    </body></html>

@@ -162,19 +162,20 @@ namespace CRMBot.Dialogs
                 {
                     await context.PostAsync(defaultMessage);
                 }
-            }
+                context.Wait(MessageReceived);
 
+            }
             else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
             {
                 EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.FilteredEntities[0].LogicalName);
                 string displayName = RetrieveEntityDisplayName(metadata, true);
                 this.BuildFilteredEntitiesList(context, result, "$Hmmm...I couldn't find that record. These are the currently selected {displayName}");
+                context.Wait(MessageReceived);
             }
             else
             {
-                await context.PostAsync(defaultMessage);
+                await Locate(context, result);
             }
-            context.Wait(MessageReceived);
         }
         [LuisIntent("Send")]
         public async Task Send(IDialogContext context, LuisResult result)
@@ -489,8 +490,6 @@ namespace CRMBot.Dialogs
                     bool associatedEntities = false;
                     QueryExpression expression = new QueryExpression(entityTypeEntity.Entity);
 
-                    expression.AddOrder("createdon", OrderType.Ascending);
-
                     expression.ColumnSet = new ColumnSet(true);
                     //TODO make this smarter based on relationship metadata
                     if (this.SelectedEntity != null && this.SelectedEntity.LogicalName == "systemuser" && entityMetadata.Attributes.Any(a => a.LogicalName == "createdby"))
@@ -527,7 +526,7 @@ namespace CRMBot.Dialogs
                         if (dates != null && dates.Count > 0)
                         {
                             string action = "created";
-                            EntityRecommendation actionEntity = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.Action);
+                            EntityRecommendation actionEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.Action);
                             if (actionEntity != null)
                             {
                                 action = actionEntity.Entity;
@@ -546,8 +545,13 @@ namespace CRMBot.Dialogs
                                 {
                                     whenString = $"{action} after {dates[0].ToString("MM/dd/yyyy")}";
                                 }
+                                expression.AddOrder(field, OrderType.Ascending);
                             }
                         }
+                    }
+                    if (expression.Orders == null || expression.Orders.Count <= 0)
+                    {
+                        expression.AddOrder(entityMetadata.PrimaryNameAttribute, OrderType.Ascending);
                     }
                     using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                     {
@@ -637,9 +641,22 @@ namespace CRMBot.Dialogs
 
         protected async void BuildFilteredEntitiesList(IDialogContext context, LuisResult result, string titleMessage)
         {
-            List<Microsoft.Bot.Connector.CardAction> cardButtons = new List<Microsoft.Bot.Connector.CardAction>();
-
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            var message = context.MakeMessage();
+
+            AdaptiveCards.AdaptiveCard plCard = new AdaptiveCards.AdaptiveCard()
+            {
+                Title = titleMessage,
+            };
+            plCard.Body.Add(new AdaptiveCards.TextBlock() { Text = titleMessage, Wrap = true });
+
+            Microsoft.Bot.Connector.Attachment attachment = new Microsoft.Bot.Connector.Attachment()
+            {
+                ContentType = AdaptiveCards.AdaptiveCard.ContentType,
+                Content = plCard
+            };
+            message.Attachments.Add(attachment);
+
             if (this.FilteredEntities != null)
             {
                 EntityMetadata entityMetadata = null;
@@ -698,87 +715,97 @@ namespace CRMBot.Dialogs
                     {
                         string column = columns[j];
                         string displayValue = this.GetAttributeDisplayValue(result, this.FilteredEntities[i], entityMetadata, column);
-                        if (j == 1)
-                        {
-                            cardText.Append("(");
-                        }
+
                         if (!string.IsNullOrEmpty(displayValue))
                         {
-                            if (j > 1)
+                            if (j > 0)
                             {
-                                cardText.Append(", ");
+                                plCard.Body.Add(new AdaptiveCards.TextBlock() { Text = displayValue, Wrap = true, });
                             }
-                            cardText.Append(displayValue);
+                            else
+                            {
+                                plCard = new AdaptiveCards.AdaptiveCard()
+                                {
+                                    Title = titleMessage,
+                                };
+                                plCard.Body.Add(new AdaptiveCards.TextBlock() { Text = displayValue, Wrap = true, Size = AdaptiveCards.TextSize.Large, Weight = AdaptiveCards.TextWeight.Bolder });
+                            }
                         }
                     }
-                    if (columns.Count > 1)
-                    {
-                        cardText.Append(")");
-                    }
 
-                    Microsoft.Bot.Connector.CardAction cityBtn1 = new Microsoft.Bot.Connector.CardAction()
+
+                    AdaptiveCards.SubmitAction recordButton = new AdaptiveCards.SubmitAction()
                     {
-                        Value = (i + 1).ToString(),
-                        Type = "postBack",
-                        Title = cardText.ToString()
+                        Data = (i + 1).ToString(),
+                        Title = "Select this Record"
                     };
-
-                    cardButtons.Add(cityBtn1);
+                    plCard.Actions.Add(recordButton);
+                    attachment = new Microsoft.Bot.Connector.Attachment()
+                    {
+                        ContentType = AdaptiveCards.AdaptiveCard.ContentType,
+                        Content = plCard
+                    };
+                    message.Attachments.Add(attachment);
                 }
+
+                plCard = new AdaptiveCards.AdaptiveCard()
+                {
+                    Title = titleMessage,
+                };
+
                 if (hasMore)
                 {
                     if (start == 0)
                     {
-                        Microsoft.Bot.Connector.CardAction cityBtn1 = new Microsoft.Bot.Connector.CardAction()
+                        AdaptiveCards.SubmitAction nextButton = new AdaptiveCards.SubmitAction()
                         {
-                            Value = "next",
-                            Type = "postBack",
+                            Data = "next",
                             Title = "Show Next Page..."
                         };
 
-                        cardButtons.Add(cityBtn1);
+                        plCard.Actions.Add(nextButton);
                     }
                     else
                     {
-                        Microsoft.Bot.Connector.CardAction backButton = new Microsoft.Bot.Connector.CardAction()
+                        AdaptiveCards.SubmitAction backButton = new AdaptiveCards.SubmitAction()
                         {
-                            Value = "back",
-                            Type = "postBack",
+                            Data = "back",
                             Title = "Show Previous Page..."
                         };
 
-                        cardButtons.Add(backButton);
-                        Microsoft.Bot.Connector.CardAction nextButton = new Microsoft.Bot.Connector.CardAction()
+                        plCard.Actions.Add(backButton);
+                        AdaptiveCards.SubmitAction nextButton = new AdaptiveCards.SubmitAction()
                         {
-                            Value = "next",
-                            Type = "postBack",
+                            Data = "next",
                             Title = "Show Next Page..."
                         };
 
-                        cardButtons.Add(nextButton);
+                        plCard.Actions.Add(nextButton);
                     }
                 }
-                else if(start > 0)
+                else if (start > 0)
                 {
-                    Microsoft.Bot.Connector.CardAction backButton = new Microsoft.Bot.Connector.CardAction()
+                    AdaptiveCards.SubmitAction backButton = new AdaptiveCards.SubmitAction()
                     {
-                        Value = "back",
-                        Type = "postBack",
-                        Title = "Show Previous Page..."
+                        Data = "back",
+                        Title = "Show Previous Page...",
                     };
 
-                    cardButtons.Add(backButton);
+                    plCard.Actions.Add(backButton);
                 }
             }
 
-            Microsoft.Bot.Connector.ReceiptCard plCard = new Microsoft.Bot.Connector.ReceiptCard()
+            if (plCard.Actions.Count > 0)
             {
-                Title = titleMessage,
-                Buttons = cardButtons
-            };
+                attachment = new Microsoft.Bot.Connector.Attachment()
+                {
+                    ContentType = AdaptiveCards.AdaptiveCard.ContentType,
+                    Content = plCard
+                };
+                message.Attachments.Add(attachment);
+            }
 
-            var message = context.MakeMessage();
-            message.Attachments.Add(Microsoft.Bot.Connector.Extensions.ToAttachment(plCard));
+            //message.AttachmentLayout = "carousel";
             await context.PostAsync(message);
         }
         protected string FindEntity(LuisResult result, bool ignoreAttributeNameAndValue)
