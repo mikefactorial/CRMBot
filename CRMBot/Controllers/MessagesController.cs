@@ -66,7 +66,7 @@ namespace CRMBot
                     {
                         await connector.Conversations.ReplyToActivityAsync(message.CreateReply("Hi there, before we can work together you need to tell me your Dynamics 365 URL (e.g. https://contoso.crm.dynamics.com)"));
                     }
-                    else if (string.IsNullOrEmpty(state.AccessToken) || (!string.IsNullOrEmpty(crmUrl) && crmUrl != state.OrganizationUrl))
+                    else if (string.IsNullOrEmpty(state.AccessToken) || (!string.IsNullOrEmpty(crmUrl) && crmUrl != state.OrganizationUrl) || state.UtcTokenExpirationDateTime < DateTime.UtcNow.AddMinutes(-1))
                     {
                         string extraQueryParams = string.Empty;
                         if (crmUrl != string.Empty && state.OrganizationUrl != crmUrl)

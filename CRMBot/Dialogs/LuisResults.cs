@@ -283,16 +283,23 @@ namespace CRMBot.Dialogs
             return state.EntityMapping[text];
         }
 
-        public static EntityRecommendation RetrieveEntity(this LuisResult result, string channelId, string userId, EntityTypeNames entityType)
+        public static EntityRecommendation RetrieveEntity(this LuisResult result, string channelId, string userId, params EntityTypeNames[] entityTypes)
         {
             double? max = -1.00;
             EntityRecommendation bestEntity = null;
-            foreach (var entity in result.Entities.Where(e => e.Type == entityType.EntityTypeName && (e.Score >= entityType.EntityThreashold) || (e.Score == null && entityType.EntityThreashold <= 0)))
+            for (int i = 0; i < entityTypes.Length; i++)
             {
-                if ((entity.Score != null && max < entity.Score) || (max <= 0 && entity.Score == null))
+                foreach (var entity in result.Entities.Where(e => e.Type == entityTypes[i].EntityTypeName && (e.Score >= entityTypes[i].EntityThreashold) || (e.Score == null && entityTypes[i].EntityThreashold <= 0)))
                 {
-                    bestEntity = entity;
-                    max = entity.Score;
+                    if ((entity.Score != null && max < entity.Score) || (max <= 0 && entity.Score == null))
+                    {
+                        bestEntity = entity;
+                        max = entity.Score;
+                    }
+                }
+                if (bestEntity != null)
+                {
+                    break;
                 }
             }
             if (bestEntity != null)

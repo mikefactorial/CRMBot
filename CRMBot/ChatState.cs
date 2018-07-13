@@ -145,5 +145,9 @@ namespace CRMBot
             }
             return null;
         }
+        public DateTime UtcTokenExpirationDateTime
+        {
+            get; set;
+        }
     }
 }

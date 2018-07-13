@@ -48,7 +48,7 @@ namespace CRMBot
             ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
             ChatState state = ChatState.RetrieveChatState(Session["channelId"].ToString(), Session["userId"].ToString());
             state.AccessToken = authResult.Result.AccessToken;
-
+            state.UtcTokenExpirationDateTime = authResult.Result.ExpiresOn.UtcDateTime;
             ViewBag.Message = $"Your Token - {authResult.Result.AccessToken} Channel Id - {Session["channelId"].ToString()} User Id - {Session["userId"].ToString()}";
 
             // Use the data stored previously to create the required objects.

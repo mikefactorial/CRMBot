@@ -58,9 +58,7 @@ namespace CRMBot.Dialogs
             "\"How many tasks, emails etc.\"",
             "\"Follow up July 12 2020\"",
             "\"Show me the name, status, date created etc.\"",
-            "Send me an image and say \"Attach as 'Profile Pic'\"",
-            "\"Forget current record\"",
-            "\"Open record\"",
+            "Send me an image and say \"Attach as 'Profile Pic'\""
         };
 
         public static string[] FindActionPhrases = new string[]
@@ -73,7 +71,7 @@ namespace CRMBot.Dialogs
         public static string defaultMessage = $"Sorry, I didn't understand that. Try saying {CrmDialog.BuildCommandList(CrmDialog.WelcomePhrases)}";
 
         public static string waitMessage = "Got it...Give me a second while I ";
-        public const int MAX_RECORDS_TO_SHOW_PER_PAGE = 5;
+        public const int MAX_RECORDS_TO_SHOW_PER_PAGE = int.MaxValue;
 
         private string channelId = string.Empty;
         private string userId = string.Empty;
@@ -122,16 +120,16 @@ namespace CRMBot.Dialogs
                 }
                 if (date != DateTime.MinValue)
                 {
-                    await context.PostAsync($"Okay...I've created task to follow up with {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} on { date.ToLongDateString() }");
+                    ShowCurrentRecordSelection(context, result, $"Okay...I've created task to follow up with {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} on { date.ToLongDateString() }");
                 }
                 else
                 {
-                    await context.PostAsync($"Okay...I've created task to follow up with {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]}");
+                    ShowCurrentRecordSelection(context, result, $"Okay...I've created task to follow up with {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]}");
                 }
             }
             else
             {
-                await context.PostAsync($"Hmmm...I'm not sure who to follow up with. Say for example {FormatPhrases(FindActionPhrases)}");
+                ShowCurrentRecordSelection(context, result, $"Hmmm...I'm not sure who to follow up with. Say for example {BuildCommandList(FindActionPhrases)}");
             }
             context.Wait(MessageReceived);
         }
@@ -143,7 +141,7 @@ namespace CRMBot.Dialogs
             if (this.SelectedEntity != null)
             {
                 EntityMetadata metadata = ChatState.RetrieveChatState(this.channelId, this.userId).RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
-                EntityRecommendation displayField = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.DisplayField);
+                EntityRecommendation displayField = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.DisplayField, EntityTypeNames.AttributeName);
                 string displayName = RetrieveEntityDisplayName(metadata, false);
                 if (displayField != null)
                 {
@@ -151,16 +149,16 @@ namespace CRMBot.Dialogs
                     string displayValue = GetAttributeDisplayValue(result, metadata, att);
                     if (!string.IsNullOrEmpty(displayValue))
                     {
-                        await context.PostAsync($"{this.SelectedEntity[metadata.PrimaryNameAttribute]}'s {displayField.Entity} is {displayValue}");
+                        ShowCurrentRecordSelection(context, result, $"{this.SelectedEntity[metadata.PrimaryNameAttribute]}'s {displayField.Entity} is {displayValue}");
                     }
                     else
                     {
-                        await context.PostAsync($"The {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} does not have a {displayField.Entity}");
+                        ShowCurrentRecordSelection(context, result, $"The {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} does not have a {displayField.Entity}");
                     }
                 }
                 else
                 {
-                    await context.PostAsync(defaultMessage);
+                    ShowCurrentRecordSelection(context, result, defaultMessage);
                 }
                 context.Wait(MessageReceived);
 
@@ -180,7 +178,7 @@ namespace CRMBot.Dialogs
         [LuisIntent("Send")]
         public async Task Send(IDialogContext context, LuisResult result)
         {
-            await context.PostAsync(defaultMessage);
+            ShowCurrentRecordSelection(context, result, defaultMessage);
             context.Wait(MessageReceived);
         }
         [LuisIntent("None")]
@@ -189,7 +187,7 @@ namespace CRMBot.Dialogs
             ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
             int selection = -1;
 
-            EntityRecommendation ordinal = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.Ordinal);
+            EntityRecommendation ordinal = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.Ordinal);
             if (ordinal != null || Int32.TryParse(result.Query, out selection))
             {
                 bool gotIndex = true;
@@ -217,26 +215,26 @@ namespace CRMBot.Dialogs
                         this.FilteredEntities = null;
                         EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
                         string displayName = RetrieveEntityDisplayName(metadata, false);
-                        await context.PostAsync($"Got it. You've selected the {displayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]}. Now say {BuildCommandList(ActionPhrases)}");
+                        ShowCurrentRecordSelection(context, result, $"Got it. You've selected the {displayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]}. Now say {BuildCommandList(ActionPhrases)}");
                     }
                     else
                     {
-                        await context.PostAsync($"Hmmm. I couldn't select that record. Make sure the number is within the current range of selected records (i.e. 1 to {this.FilteredEntities.Length}).");
+                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't select that record. Make sure the number is within the current range of selected records (i.e. 1 to {this.FilteredEntities.Length}).");
                     }
                 }
                 else if (this.FilteredEntities == null || this.FilteredEntities.Length == 0)
                 {
-                    await context.PostAsync($"Hmmm. It looks like you're trying to select a record. However, there are no filtered records to choose from. Say something like \"How many leads were created last week.\" to select a list of records.");
+                    ShowCurrentRecordSelection(context, result, $"Hmmm. It looks like you're trying to select a record. However, there are no filtered records to choose from. Say something like \"How many leads were created last week.\" to select a list of records.");
                 }
                 else
                 {
-                    await context.PostAsync($"Hmmm. I couldn't select that record. Make sure the number is within the current range of selected records (i.e. 1 to {this.FilteredEntities.Length}).");
+                    ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't select that record. Make sure the number is within the current range of selected records (i.e. 1 to {this.FilteredEntities.Length}).");
                 }
             }
             //Summit stuff
             else if (result.Query.ToLower().Contains("you ready"))
             {
-                await context.PostAsync($"I was built ready {chatState.UserFirstName}! Don't you go screwing it up for me...");
+                ShowCurrentRecordSelection(context, result, $"I was built ready {chatState.UserFirstName}! Don't you go screwing it up for me...");
             }
             else if (result.Query.ToLower().StartsWith("next"))
             {
@@ -261,7 +259,7 @@ namespace CRMBot.Dialogs
                 {
                     EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
                     string displayName = RetrieveEntityDisplayName(metadata, false);
-                    await context.PostAsync($"You've selected a {displayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]}? Now say {BuildCommandList(ActionPhrases)}");
+                    ShowCurrentRecordSelection(context, result, $"You've selected a {displayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]}? Now say {BuildCommandList(ActionPhrases)}");
                 }
             }
             else if (result.Query.ToLower().StartsWith("forget") || result.Query.ToLower().Contains("start over") || result.Query.ToLower().Contains("done"))
@@ -301,7 +299,7 @@ namespace CRMBot.Dialogs
                 {
                     await context.PostAsync($"Nothing much, just serving up some Dynamics data like it's my job.");
                 }
-                await context.PostAsync($"To get started say something like {CrmDialog.BuildCommandList(CrmDialog.WelcomePhrases)}.");
+                ShowCurrentRecordSelection(context, result, $"To get started say something like {CrmDialog.BuildCommandList(CrmDialog.WelcomePhrases)}.");
             }
             context.Wait(MessageReceived);
         }
@@ -315,7 +313,7 @@ namespace CRMBot.Dialogs
                 ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
                 if (context.Activity.From.Properties.ContainsKey("crmUrl"))
                 {
-                    await context.PostAsync("Give me a second. I'm opening that record...");
+                    ShowCurrentRecordSelection(context, result, "Give me a second. I'm opening that record...");
 
                     Microsoft.Bot.Connector.Activity backChannelReply = ((Microsoft.Bot.Connector.Activity)context.Activity).CreateReply();
                     backChannelReply.Text = $"{this.SelectedEntity.LogicalName}|{this.SelectedEntity.Id.ToString()}";
@@ -331,12 +329,11 @@ namespace CRMBot.Dialogs
                     //Open in browser: http://myorg.crm.dynamics.com/main.aspx?etn=account&pagetype=entityrecord&id=%7B91330924-802A-4B0D-A900-34FD9D790829%7D
                     //await context.PostAsync($"Click [here]({chatState.OrganizationUrl}/main.aspx?etn={this.SelectedEntity.LogicalName}&pagetype=entityrecord&id={this.SelectedEntity.Id.ToString()}) to open the record in your browser or click [here](ms-dynamicsxrm://?pagetype=view&etn={this.SelectedEntity.LogicalName}&id={this.SelectedEntity.Id.ToString()}) to open the record in the mobile client.");
                     await context.PostAsync($"Click [here]({chatState.OrganizationUrl}/main.aspx?etn={this.SelectedEntity.LogicalName}&pagetype=entityrecord&id={this.SelectedEntity.Id.ToString()}) to open the record in your browser.");
-
                 }
             }
             else
             {
-                await context.PostAsync(defaultMessage);
+                ShowCurrentRecordSelection(context, result, defaultMessage);
             }
             context.Wait(MessageReceived);
         }
@@ -348,8 +345,8 @@ namespace CRMBot.Dialogs
             {
                 ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
                 EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
-                EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.AttributeName);
-                EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.AttributeValue);
+                EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeName, EntityTypeNames.DisplayField);
+                EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeValue);
                 string displayName = RetrieveEntityDisplayName(metadata, false);
                 if (attributeName != null && attributeValue != null)
                 {
@@ -360,22 +357,22 @@ namespace CRMBot.Dialogs
                         using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                         {
                             serviceProxy.Update(this.SelectedEntity);
-                            await context.PostAsync($"I've update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record with the new {attributeName.Entity} {attributeValue.Entity}");
+                            ShowCurrentRecordSelection(context, result, $"I've update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record with the new {attributeName.Entity} {attributeValue.Entity}");
                         }
                     }
                     else
                     {
-                        await context.PostAsync($"I wasn't able to update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record. I didn't recognize the field name.");
+                        ShowCurrentRecordSelection(context, result, $"I wasn't able to update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record. I didn't recognize the field name.");
                     }
                 }
                 else
                 {
-                    await context.PostAsync($"I wasn't able to update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record. I didn't recognize the field name and value.");
+                    ShowCurrentRecordSelection(context, result, $"I wasn't able to update the {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} record. I didn't recognize the field name and value.");
                 }
             }
             else
             {
-                await context.PostAsync(defaultMessage);
+                ShowCurrentRecordSelection(context, result, defaultMessage);
             }
             context.Wait(MessageReceived);
         }
@@ -389,10 +386,10 @@ namespace CRMBot.Dialogs
                 EntityMetadata metadata = chatState.RetrieveEntityMetadata(entityTypeEntity.Entity);
                 if (metadata != null)
                 {
-                    EntityRecommendation firstName = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.FirstName);
-                    EntityRecommendation lastName = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.LastName);
-                    EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.AttributeName);
-                    EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.AttributeValue);
+                    EntityRecommendation firstName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.FirstName);
+                    EntityRecommendation lastName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.LastName);
+                    EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeName, EntityTypeNames.DisplayField);
+                    EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeValue);
 
                     Entity entity = new Entity(entityTypeEntity.Entity);
                     if (attributeValue != null)
@@ -433,23 +430,23 @@ namespace CRMBot.Dialogs
                     }
 
                     string displayName = RetrieveEntityDisplayName(metadata, false);
-                    await context.PostAsync($"I've created a new {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]}. If you want to set additional fields say something like 'Update {displayName} set home phone to 555-555-5555'");
+                    ShowCurrentRecordSelection(context, result, $"I've created a new {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]}. If you want to set additional fields say something like 'Update {displayName} set home phone to 555-555-5555'");
                 }
                 else
                 {
                     if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
                     {
-                        await context.PostAsync($"Hmmm. I couldn't find any records called {entityTypeEntity.Entity} in Dynamics.");
+                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records called {entityTypeEntity.Entity} in Dynamics.");
                     }
                     else
                     {
-                        await context.PostAsync($"Hmmm. I couldn't find any records that matched your query in Dynamics.");
+                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records that matched your query in Dynamics.");
                     }
                 }
             }
             else
             {
-                await context.PostAsync(defaultMessage);
+                ShowCurrentRecordSelection(context, result, defaultMessage);
             }
             context.Wait(MessageReceived);
         }
@@ -462,7 +459,7 @@ namespace CRMBot.Dialogs
             if (this.SelectedEntity != null)
             {
                 EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
-                await context.PostAsync($"I found a {entityDisplayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]} what would you like to do next? You can say {string.Join(" or ", ActionPhrases)}");
+                ShowCurrentRecordSelection(context, result, $"I found a {entityDisplayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]} what would you like to do next? You can say {BuildCommandList(ActionPhrases)}");
             }
             else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
             {
@@ -470,7 +467,7 @@ namespace CRMBot.Dialogs
             }
             else
             {
-                await context.PostAsync($"Hmmm...I couldn't find that {entityDisplayName}.");
+                ShowCurrentRecordSelection(context, result, $"Hmmm...I couldn't find that {entityDisplayName}.");
             }
             context.Wait(MessageReceived);
         }
@@ -519,7 +516,7 @@ namespace CRMBot.Dialogs
 
                     string whenString = string.Empty;
 
-                    EntityRecommendation dateEntity = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.DateTime);
+                    EntityRecommendation dateEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.DateTime);
                     if (dateEntity != null)
                     {
                         List<DateTime> dates = dateEntity.ParseDateTimes();
@@ -577,17 +574,17 @@ namespace CRMBot.Dialogs
                 {
                     if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
                     {
-                        await context.PostAsync($"Hmmm. I couldn't find any records called {entityTypeEntity.Entity} in Dynamics.");
+                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records called {entityTypeEntity.Entity} in Dynamics.");
                     }
                     else
                     {
-                        await context.PostAsync($"Hmmm. I couldn't find any records that matched your query in Dynamics.");
+                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records that matched your query in Dynamics.");
                     }
                 }
             }
             else
             {
-                await context.PostAsync(defaultMessage);
+                ShowCurrentRecordSelection(context, result, defaultMessage);
             }
             context.Wait(MessageReceived);
         }
@@ -597,15 +594,15 @@ namespace CRMBot.Dialogs
             this.FindEntity(result, true);
             if (this.SelectedEntity == null)
             {
-                await context.PostAsync($"There's nothing to attach the file to. Say {FormatPhrases(FindActionPhrases)} to find a record to attach this to.");
+                ShowCurrentRecordSelection(context, result, $"There's nothing to attach the file to. Say {BuildCommandList(FindActionPhrases)} to find a record to attach this to.");
             }
             else if (this.Attachments == null || this.Attachments.Count == 0)
             {
-                await context.PostAsync($"There's nothing to attach. Send me a file and Say {FormatPhrases(AttachmentActionPhrases)} to attach a file.");
+                ShowCurrentRecordSelection(context, result, $"There's nothing to attach. Send me a file and Say {BuildCommandList(AttachmentActionPhrases)} to attach a file.");
             }
             else
             {
-                EntityRecommendation subjectEntity = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.AttributeValue);
+                EntityRecommendation subjectEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeValue);
                 string subject = "Attachment";
                 if (subjectEntity != null)
                 {
@@ -626,7 +623,7 @@ namespace CRMBot.Dialogs
                     using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                     {
                         serviceProxy.Create(annotation);
-                        await context.PostAsync($"Okay. I've attached the file to {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} as a note with the Subject '{annotation["subject"]}'");
+                        ShowCurrentRecordSelection(context, result, $"Okay. I've attached the file to {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} as a note with the Subject '{annotation["subject"]}'");
                     }
                 }
                 this.Attachments = null;
@@ -634,28 +631,35 @@ namespace CRMBot.Dialogs
 
             context.Wait(MessageReceived);
         }
-        public static string FormatPhrases(string[] phrases)
-        {
-            return string.Join(" or ", phrases);
-        }
 
+        protected async void ShowCurrentRecordSelection(IDialogContext context, LuisResult result, string messageText)
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            var message = context.MakeMessage();
+            message.Text = messageText;
+
+            if (this.SelectedEntity != null)
+            {
+                message.SuggestedActions = new Microsoft.Bot.Connector.SuggestedActions()
+                {
+                    Actions = new List<Microsoft.Bot.Connector.CardAction>()
+                    {
+                        new Microsoft.Bot.Connector.CardAction(){ Title = $"Forget {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]}", Type = Microsoft.Bot.Connector.ActionTypes.ImBack, Value="Forget" },
+                        new Microsoft.Bot.Connector.CardAction(){ Title = $"Open {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]}", Type = Microsoft.Bot.Connector.ActionTypes.ImBack, Value="Open" },
+                    }
+                };
+            }
+            await context.PostAsync(message);
+
+        }
         protected async void BuildFilteredEntitiesList(IDialogContext context, LuisResult result, string titleMessage)
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             var message = context.MakeMessage();
+            message.Text = titleMessage;
 
-            AdaptiveCards.AdaptiveCard plCard = new AdaptiveCards.AdaptiveCard()
-            {
-                Title = titleMessage,
-            };
-            plCard.Body.Add(new AdaptiveCards.TextBlock() { Text = titleMessage, Wrap = true });
-
-            Microsoft.Bot.Connector.Attachment attachment = new Microsoft.Bot.Connector.Attachment()
-            {
-                ContentType = AdaptiveCards.AdaptiveCard.ContentType,
-                Content = plCard
-            };
-            message.Attachments.Add(attachment);
+            AdaptiveCards.AdaptiveCard plCard = null;
+            Microsoft.Bot.Connector.Attachment attachment = null;
 
             if (this.FilteredEntities != null)
             {
@@ -805,9 +809,14 @@ namespace CRMBot.Dialogs
                 message.Attachments.Add(attachment);
             }
 
-            //message.AttachmentLayout = "carousel";
+            message.AttachmentLayout = "carousel";
             await context.PostAsync(message);
+            if (FilteredEntities.Length == 0)
+            {
+                ShowCurrentRecordSelection(context, result, string.Empty);
+            }
         }
+
         protected string FindEntity(LuisResult result, bool ignoreAttributeNameAndValue)
         {
             Entity previouslySelectedEntity = this.SelectedEntity;
@@ -827,11 +836,11 @@ namespace CRMBot.Dialogs
                         entityDisplayName = metadata.DisplayName.UserLocalizedLabel.Label;
                     }
 
-                    EntityRecommendation dateEntity = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.DateTime);
-                    EntityRecommendation firstName = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.FirstName);
-                    EntityRecommendation lastName = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.LastName);
-                    EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.AttributeName);
-                    EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId,EntityTypeNames.AttributeValue);
+                    EntityRecommendation dateEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.DateTime);
+                    EntityRecommendation firstName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.FirstName);
+                    EntityRecommendation lastName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.LastName);
+                    EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeName, EntityTypeNames.DisplayField);
+                    EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeValue);
 
                     using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                     {
@@ -868,7 +877,8 @@ namespace CRMBot.Dialogs
                     }
                 }
             }
-            else if (this.SelectedEntity == null)
+
+            if (this.SelectedEntity == null)
             {
                 this.SelectedEntity = previouslySelectedEntity;
             }
