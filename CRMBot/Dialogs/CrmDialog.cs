@@ -133,48 +133,6 @@ namespace CRMBot.Dialogs
             }
             context.Wait(MessageReceived);
         }
-        [LuisIntent("Display")]
-        public async Task Display(IDialogContext context, LuisResult result)
-        {
-            ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
-            this.FindEntity(result, true);
-            if (this.SelectedEntity != null)
-            {
-                EntityMetadata metadata = ChatState.RetrieveChatState(this.channelId, this.userId).RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
-                EntityRecommendation displayField = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.DisplayField, EntityTypeNames.AttributeName);
-                string displayName = RetrieveEntityDisplayName(metadata, false);
-                if (displayField != null)
-                {
-                    string att = result.FindAttributeLogicalName(metadata, displayField.Entity);
-                    string displayValue = GetAttributeDisplayValue(result, metadata, att);
-                    if (!string.IsNullOrEmpty(displayValue))
-                    {
-                        ShowCurrentRecordSelection(context, result, $"{this.SelectedEntity[metadata.PrimaryNameAttribute]}'s {displayField.Entity} is {displayValue}");
-                    }
-                    else
-                    {
-                        ShowCurrentRecordSelection(context, result, $"The {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} does not have a {displayField.Entity}");
-                    }
-                }
-                else
-                {
-                    ShowCurrentRecordSelection(context, result, defaultMessage);
-                }
-                context.Wait(MessageReceived);
-
-            }
-            else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
-            {
-                EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.FilteredEntities[0].LogicalName);
-                string displayName = RetrieveEntityDisplayName(metadata, true);
-                this.BuildFilteredEntitiesList(context, result, "$Hmmm...I couldn't find that record. These are the currently selected {displayName}");
-                context.Wait(MessageReceived);
-            }
-            else
-            {
-                await Locate(context, result);
-            }
-        }
         [LuisIntent("Send")]
         public async Task Send(IDialogContext context, LuisResult result)
         {
@@ -456,27 +414,7 @@ namespace CRMBot.Dialogs
             ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
             string entityDisplayName = this.FindEntity(result, false);
 
-            if (this.SelectedEntity != null)
-            {
-                EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
-                ShowCurrentRecordSelection(context, result, $"I found a {entityDisplayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]} what would you like to do next? You can say {BuildCommandList(ActionPhrases)}");
-            }
-            else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
-            {
-                this.BuildFilteredEntitiesList(context, result, $"I found {this.FilteredEntities.Length} {entityDisplayName} that match. Select a record from the list below");
-            }
-            else
-            {
-                ShowCurrentRecordSelection(context, result, $"Hmmm...I couldn't find that {entityDisplayName}.");
-            }
-            context.Wait(MessageReceived);
-        }
-
-        [LuisIntent("HowMany")]
-        public async Task CountRecords(IDialogContext context, LuisResult result)
-        {
             string parentEntity = string.Empty;
-            ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
 
             EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.EntityType);
             if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
@@ -504,7 +442,7 @@ namespace CRMBot.Dialogs
                         associatedEntities = true;
                         expression.Criteria.AddCondition("objectid", ConditionOperator.Equal, this.SelectedEntity.Id);
                     }
-                    else if(this.SelectedEntity != null)
+                    else if (this.SelectedEntity != null)
                     {
                         var relationships = entityMetadata.ManyToOneRelationships.Where(m => m.ReferencedEntity == this.SelectedEntity.LogicalName).ToArray();
                         foreach (var relationship in relationships)
@@ -584,10 +522,41 @@ namespace CRMBot.Dialogs
             }
             else
             {
-                ShowCurrentRecordSelection(context, result, defaultMessage);
+                if (this.SelectedEntity != null)
+                {
+                    EntityMetadata metadata = ChatState.RetrieveChatState(this.channelId, this.userId).RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
+                    EntityRecommendation displayField = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.DisplayField, EntityTypeNames.AttributeName);
+                    string displayName = RetrieveEntityDisplayName(metadata, false);
+                    if (displayField != null)
+                    {
+                        string att = result.FindAttributeLogicalName(metadata, displayField.Entity);
+                        string displayValue = GetAttributeDisplayValue(result, metadata, att);
+                        if (!string.IsNullOrEmpty(displayValue))
+                        {
+                            ShowCurrentRecordSelection(context, result, $"{this.SelectedEntity[metadata.PrimaryNameAttribute]}'s {displayField.Entity} is {displayValue}");
+                        }
+                        else
+                        {
+                            ShowCurrentRecordSelection(context, result, $"The {displayName} {this.SelectedEntity[metadata.PrimaryNameAttribute]} does not have a {displayField.Entity}");
+                        }
+                    }
+                    else
+                    {
+                        ShowCurrentRecordSelection(context, result, $"I found a {entityDisplayName} named {this.SelectedEntity[metadata.PrimaryNameAttribute]} what would you like to do next? You can say {BuildCommandList(ActionPhrases)}");
+                    }
+                }
+                else if (this.FilteredEntities != null && this.FilteredEntities.Length > 0)
+                {
+                    this.BuildFilteredEntitiesList(context, result, $"I found {this.FilteredEntities.Length} {entityDisplayName} that match. Select a record from the list below");
+                }
+                else
+                {
+                    ShowCurrentRecordSelection(context, result, $"Hmmm...I couldn't find that {entityDisplayName}.");
+                }
             }
             context.Wait(MessageReceived);
         }
+
         [LuisIntent("Attach")]
         public async Task Attach(IDialogContext context, LuisResult result)
         {
@@ -652,6 +621,7 @@ namespace CRMBot.Dialogs
             await context.PostAsync(message);
 
         }
+
         protected async void BuildFilteredEntitiesList(IDialogContext context, LuisResult result, string titleMessage)
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();

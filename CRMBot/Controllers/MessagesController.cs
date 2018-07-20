@@ -50,8 +50,8 @@ namespace CRMBot
             }
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
-            MicrosoftAppCredentials.TrustServiceUrl(message.ServiceUrl, DateTime.MaxValue);
             */
+            MicrosoftAppCredentials.TrustServiceUrl(message.ServiceUrl, DateTime.MaxValue);
             ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
 
             try

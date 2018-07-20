@@ -240,6 +240,7 @@
     <Content Include="LuisApps\CRMInator_3_20_2018.json" />
     <Content Include="LuisApps\CRMInator_4_4_2018.json" />
     <Content Include="LuisApps\CRMInator_6_2_2018.json" />
+    <Content Include="LuisApps\CRMInator_7_18_2018.json" />
     <None Include="Properties\PublishProfiles\CRMBot.pubxml" />
     <None Include="Properties\PublishProfiles\crminator - FTP.pubxml" />
     <None Include="Properties\PublishProfiles\crminator - Web Deploy.pubxml" />
