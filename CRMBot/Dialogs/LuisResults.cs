@@ -161,7 +161,7 @@ namespace CRMBot.Dialogs
             {
                 string subText = text;
                 EntityMetadata[] metadata = state.RetrieveMetadata();
-                state.EntityMapping[text] = "contact"; //If can't find a match default to contact records
+                //state.EntityMapping[text] = "contact"; //If can't find a match default to contact records
                 //Equals
                 EntityMetadata entity = metadata.FirstOrDefault(e => (e.DisplayName != null && e.DisplayName.UserLocalizedLabel != null && e.DisplayName.UserLocalizedLabel.Label.ToLower() == subText) || (e.DisplayCollectionName != null && e.DisplayCollectionName.UserLocalizedLabel != null && e.DisplayCollectionName.UserLocalizedLabel.Label.ToLower() == subText));
                 if (entity != null)
@@ -289,7 +289,7 @@ namespace CRMBot.Dialogs
             EntityRecommendation bestEntity = null;
             for (int i = 0; i < entityTypes.Length; i++)
             {
-                foreach (var entity in result.Entities.Where(e => e.Type == entityTypes[i].EntityTypeName && (e.Score >= entityTypes[i].EntityThreashold) || (e.Score == null && entityTypes[i].EntityThreashold <= 0)))
+                foreach (var entity in result.Entities.Where(e => e.Type == entityTypes[i].EntityTypeName && ((e.Score >= entityTypes[i].EntityThreashold) || (e.Score == null && entityTypes[i].EntityThreashold <= 0))))
                 {
                     if ((entity.Score != null && max < entity.Score) || (max <= 0 && entity.Score == null))
                     {

@@ -412,12 +412,12 @@ namespace CRMBot.Dialogs
         public async Task Locate(IDialogContext context, LuisResult result)
         {
             ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
+            Guid previouslySelectedEntityId = (this.SelectedEntity != null) ? this.SelectedEntity.Id : Guid.Empty;
             string entityDisplayName = this.FindEntity(result, false);
 
             string parentEntity = string.Empty;
-
             EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.EntityType);
-            if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
+            if ((this.SelectedEntity == null || previouslySelectedEntityId == this.SelectedEntity.Id) && entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
             {
                 EntityMetadata entityMetadata = chatState.RetrieveEntityMetadata(entityTypeEntity.Entity);
                 if (entityMetadata != null)
@@ -495,10 +495,12 @@ namespace CRMBot.Dialogs
                         {
                             this.FilteredEntities = collection.Entities.ToArray();
                             string displayName = RetrieveEntityDisplayName(entityMetadata, this.FilteredEntities.Length != 1);
-                            string selectedEntityDisplayName = RetrieveEntityDisplayName(entityMetadata, false);
 
                             if (associatedEntities)
                             {
+                                EntityMetadata selectedEntityMetadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
+
+                                string selectedEntityDisplayName = RetrieveEntityDisplayName(selectedEntityMetadata, false);
                                 this.BuildFilteredEntitiesList(context, result, $"I found {collection.Entities.Count} {displayName} for the {selectedEntityDisplayName} {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} {whenString}");
                             }
                             else
@@ -603,9 +605,32 @@ namespace CRMBot.Dialogs
 
         protected async void ShowCurrentRecordSelection(IDialogContext context, LuisResult result, string messageText)
         {
+            if (this.SelectedEntity != null)
+            {
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                var message = context.MakeMessage();
+                message.Text = messageText;
+
+                message.SuggestedActions = new Microsoft.Bot.Connector.SuggestedActions()
+                {
+                    Actions = new List<Microsoft.Bot.Connector.CardAction>()
+                    {
+                        new Microsoft.Bot.Connector.CardAction(){ Title = $"Forget {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]}", Type = Microsoft.Bot.Connector.ActionTypes.ImBack, Value="Forget" },
+                        new Microsoft.Bot.Connector.CardAction(){ Title = $"Open {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]}", Type = Microsoft.Bot.Connector.ActionTypes.ImBack, Value="Open" },
+                    }
+                };
+                await context.PostAsync(message);
+            }
+        }
+
+        protected async void BuildFilteredEntitiesList(IDialogContext context, LuisResult result, string titleMessage)
+        {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             var message = context.MakeMessage();
-            message.Text = messageText;
+            message.Text = titleMessage;
+
+            AdaptiveCards.AdaptiveCard plCard = null;
+            Microsoft.Bot.Connector.Attachment attachment = null;
 
             if (this.SelectedEntity != null)
             {
@@ -618,19 +643,6 @@ namespace CRMBot.Dialogs
                     }
                 };
             }
-            await context.PostAsync(message);
-
-        }
-
-        protected async void BuildFilteredEntitiesList(IDialogContext context, LuisResult result, string titleMessage)
-        {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            var message = context.MakeMessage();
-            message.Text = titleMessage;
-
-            AdaptiveCards.AdaptiveCard plCard = null;
-            Microsoft.Bot.Connector.Attachment attachment = null;
-
             if (this.FilteredEntities != null)
             {
                 EntityMetadata entityMetadata = null;
@@ -818,20 +830,27 @@ namespace CRMBot.Dialogs
                         expression.ColumnSet = new ColumnSet(true);
                         if (attributeValue == null || ignoreAttributeNameAndValue)
                         {
-                            if ((firstName != null && attributeValue != null && firstName.Score > attributeValue.Score) || attributeValue == null || ignoreAttributeNameAndValue)
+                            if ((firstName != null && attributeValue != null && firstName.Score != null && attributeValue.Score != null && firstName.Score > attributeValue.Score) || attributeValue == null || ignoreAttributeNameAndValue)
                             {
-                                this.AddFilter(result, expression, metadata, firstName);
+                                if (firstName != null)
+                                {
+                                    this.AddFilter(result, expression, metadata, firstName);
+                                }
                             }
-                            if ((lastName != null && attributeValue != null && firstName.Score > attributeValue.Score) || attributeValue == null || ignoreAttributeNameAndValue)
+                            if ((lastName != null && attributeValue != null && lastName.Score != null && attributeValue.Score != null && lastName.Score > attributeValue.Score) || attributeValue == null || ignoreAttributeNameAndValue)
                             {
-                                this.AddFilter(result, expression, metadata, lastName);
+                                if (lastName != null)
+                                {
+                                    this.AddFilter(result, expression, metadata, lastName);
+                                }
                             }
 
                         }
-                        else if (!ignoreAttributeNameAndValue)
+                        else if (!ignoreAttributeNameAndValue && attributeName != null && attributeValue != null)
                         {
                             this.AddFilter(result, expression, metadata, result.Query, entityTypeEntity.Entity, attributeName, attributeValue);
                         }
+
                         EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
                         if (collection.Entities != null)
                         {
