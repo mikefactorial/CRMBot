@@ -159,7 +159,7 @@ namespace CRMBot
             }
             catch (Exception ex)
             {
-                await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Kabloooey! Well played human you just fried my circuits. Thanks for being patient, I'm still learning to do some things while in preview. Hopefully, I'll get this worked out soon. Here's your prize: {ex.Message}"));
+                await connector.Conversations.ReplyToActivityAsync(message.CreateReply($"Kabloooey! Well played human you just fried my circuits. Thanks for being patient, I'm still learning to do some things while in preview. Hopefully, I'll get this worked out soon. Here's your prize: {ex.ToString()}"));
             }
             return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
         }
