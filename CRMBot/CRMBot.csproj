@@ -262,6 +262,8 @@
     <None Include="Properties\PublishProfiles\CRMBot.pubxml" />
     <None Include="Properties\PublishProfiles\crminator - FTP.pubxml" />
     <None Include="Properties\PublishProfiles\crminator - Web Deploy.pubxml" />
+    <None Include="Properties\PublishProfiles\itsrbot - FTP.pubxml" />
+    <None Include="Properties\PublishProfiles\itsrbot - Web Deploy.pubxml" />
     <None Include="Properties\PublishProfiles\TempBot - FTP.pubxml" />
     <None Include="Properties\PublishProfiles\TempBot - Web Deploy.pubxml" />
     <Content Include="Views\Home\Index.cshtml" />
@@ -302,6 +304,13 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
+  <Target Name="CopyRoslynFiles" AfterTargets="AfterBuild" Condition="!$(Disable_CopyWebApplication) And '$(OutDir)' != '$(OutputPath)'">
+    <ItemGroup>
+      <RoslynFiles Include="$(CscToolPath)\*" />
+    </ItemGroup>
+    <MakeDir Directories="$(WebProjectOutputDir)\bin\roslyn" />
+    <Copy SourceFiles="@(RoslynFiles)" DestinationFolder="$(WebProjectOutputDir)\bin\roslyn" SkipUnchangedFiles="true" Retries="$(CopyRetryCount)" RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)" />
+  </Target>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>

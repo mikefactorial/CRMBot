@@ -23,7 +23,7 @@ namespace CRMBot.Dialogs
         public string FileName { get; set; }
     }
     //[LuisModel("cc421661-4803-4359-b19b-35a8bae3b466", "70c9f99320804782866c3eba387d54bf")]
-    [LuisModel("64c400cf-b36d-4874-bd01-1c7567e57d8a", "a03f8796d25a493dac9ff9e8ad2b15a6")]
+    [LuisModel("7f87dbf3-b301-4285-883e-ce8d4fb62376", "1799ee026f2d4386984da9f373fd1071")]
     [Serializable]
     public class CrmDialog : LuisDialog<object>
     {
@@ -394,11 +394,11 @@ namespace CRMBot.Dialogs
                 {
                     if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
                     {
-                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records called {entityTypeEntity.Entity} in Dynamics.");
+                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records called {entityTypeEntity.Entity}.");
                     }
                     else
                     {
-                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records that matched your query in Dynamics.");
+                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records that matched your query.");
                     }
                 }
             }
@@ -488,37 +488,44 @@ namespace CRMBot.Dialogs
                     {
                         expression.AddOrder(entityMetadata.PrimaryNameAttribute, OrderType.Ascending);
                     }
-                    using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
+                    if (expression.Criteria != null && expression.Criteria.Conditions != null && expression.Criteria.Conditions.Count > 0)
                     {
-                        EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
-                        if (collection.Entities != null)
+                        using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                         {
-                            this.FilteredEntities = collection.Entities.ToArray();
-                            string displayName = RetrieveEntityDisplayName(entityMetadata, this.FilteredEntities.Length != 1);
-
-                            if (associatedEntities)
+                            EntityCollection collection = serviceProxy.RetrieveMultiple(expression);
+                            if (collection.Entities != null)
                             {
-                                EntityMetadata selectedEntityMetadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
+                                this.FilteredEntities = collection.Entities.ToArray();
+                                string displayName = RetrieveEntityDisplayName(entityMetadata, this.FilteredEntities.Length != 1);
 
-                                string selectedEntityDisplayName = RetrieveEntityDisplayName(selectedEntityMetadata, false);
-                                this.BuildFilteredEntitiesList(context, result, $"I found {collection.Entities.Count} {displayName} for the {selectedEntityDisplayName} {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} {whenString}");
-                            }
-                            else
-                            {
-                                this.BuildFilteredEntitiesList(context, result, $"I found {collection.Entities.Count} {displayName} {whenString} in Dynamics.");
+                                if (associatedEntities)
+                                {
+                                    EntityMetadata selectedEntityMetadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
+
+                                    string selectedEntityDisplayName = RetrieveEntityDisplayName(selectedEntityMetadata, false);
+                                    this.BuildFilteredEntitiesList(context, result, $"I found {collection.Entities.Count} {displayName} for the {selectedEntityDisplayName} {this.SelectedEntity[this.SelectedEntityMetadata.PrimaryNameAttribute]} {whenString}");
+                                }
+                                else
+                                {
+                                    this.BuildFilteredEntitiesList(context, result, $"I found {collection.Entities.Count} {displayName} {whenString}.");
+                                }
                             }
                         }
+                    }
+                    else
+                    {
+                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records that matched that.");
                     }
                 }
                 else
                 {
                     if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
                     {
-                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records called {entityTypeEntity.Entity} in Dynamics.");
+                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records called {entityTypeEntity.Entity}.");
                     }
                     else
                     {
-                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records that matched your query in Dynamics.");
+                        ShowCurrentRecordSelection(context, result, $"Hmmm. I couldn't find any records that matched that.");
                     }
                 }
             }
@@ -621,6 +628,10 @@ namespace CRMBot.Dialogs
                 };
                 await context.PostAsync(message);
             }
+            else
+            {
+                await context.PostAsync(messageText);
+            }
         }
 
         protected async void BuildFilteredEntitiesList(IDialogContext context, LuisResult result, string titleMessage)
@@ -684,17 +695,24 @@ namespace CRMBot.Dialogs
                                             {
                                                 columns.Add(cell.Name);
                                             }
+                                            /*
                                             //Don't show more than 3 columns for brevity
                                             if (columns.Count > 2)
                                             {
                                                 break;
                                             }
+                                            */
                                         }
                                     }
                                 }
                             }
                         }
                     }
+
+                    plCard = new AdaptiveCards.AdaptiveCard()
+                    {
+                        Title = titleMessage,
+                    };
 
                     StringBuilder cardText = new StringBuilder($"");
                     for (int j = 0; j < columns.Count; j++)
@@ -704,16 +722,13 @@ namespace CRMBot.Dialogs
 
                         if (!string.IsNullOrEmpty(displayValue))
                         {
+
                             if (j > 0)
                             {
                                 plCard.Body.Add(new AdaptiveCards.TextBlock() { Text = displayValue, Wrap = true, });
                             }
                             else
                             {
-                                plCard = new AdaptiveCards.AdaptiveCard()
-                                {
-                                    Title = titleMessage,
-                                };
                                 plCard.Body.Add(new AdaptiveCards.TextBlock() { Text = displayValue, Wrap = true, Size = AdaptiveCards.TextSize.Large, Weight = AdaptiveCards.TextWeight.Bolder });
                             }
                         }

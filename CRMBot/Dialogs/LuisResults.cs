@@ -18,7 +18,7 @@ namespace CRMBot.Dialogs
         public static EntityTypeNames Action = new EntityTypeNames() { EntityTypeName = "Action", EntityThreashold = .1 };
         public static EntityTypeNames AttributeName = new EntityTypeNames() { EntityTypeName = "AttributeName", EntityThreashold = .1 };
         public static EntityTypeNames AttributeValue = new EntityTypeNames() { EntityTypeName = "AttributeValue", EntityThreashold = .1 };
-        public static EntityTypeNames DateTime = new EntityTypeNames() { EntityTypeName = "builtin.datetime.date", EntityThreashold = 0 };
+        public static EntityTypeNames DateTime = new EntityTypeNames() { EntityTypeName = "builtin.datetimeV2.daterange", EntityThreashold = 0 };
         public static EntityTypeNames Ordinal = new EntityTypeNames() { EntityTypeName = "builtin.ordinal", EntityThreashold = 0 };
         public static EntityTypeNames DisplayField = new EntityTypeNames() { EntityTypeName = "DisplayField", EntityThreashold = .1 };
 
