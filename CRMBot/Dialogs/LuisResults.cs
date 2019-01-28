@@ -283,7 +283,7 @@ namespace CRMBot.Dialogs
             return state.EntityMapping[text];
         }
 
-        public static EntityRecommendation RetrieveEntity(this LuisResult result, string channelId, string userId, params EntityTypeNames[] entityTypes)
+        public static EntityRecommendation RetrieveEntity(this LuisResult result, string channelId, string userId, bool originalCasing, params EntityTypeNames[] entityTypes)
         {
             double? max = -1.00;
             EntityRecommendation bestEntity = null;
@@ -304,6 +304,10 @@ namespace CRMBot.Dialogs
             }
             if (bestEntity != null)
             {
+                if (originalCasing)
+                {
+                    bestEntity.Entity = result.Query.Substring((int)bestEntity.StartIndex, ((int)bestEntity.EndIndex - (int)bestEntity.StartIndex) + 1);
+                }
                 if (bestEntity.Type == EntityTypeNames.FirstName.EntityTypeName || bestEntity.Type == EntityTypeNames.LastName.EntityTypeName)
                 {
                     bestEntity.Entity = bestEntity.Entity.Replace("'s", string.Empty);

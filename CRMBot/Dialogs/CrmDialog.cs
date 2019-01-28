@@ -40,7 +40,7 @@ namespace CRMBot.Dialogs
             "\"Find lead Sarah Connor\"",
             "\"Open lead Sarah Connor\"",
             "\"Follow up with lead Sarah Connor next Tuesday\"",
-            "For more help go [here](http://www.cobalt.net/crmbot)."
+            "For more help go [here](https://mikefactorial.com/dynamics-365-bot-sample-commands)."
         };
 
         public static string[] WelcomePhrases = new string[]
@@ -51,7 +51,7 @@ namespace CRMBot.Dialogs
             "\"Find lead Sarah Connor\"",
             "\"Open lead Sarah Connor\"",
             "\"Follow up with lead Sarah Connor next Tuesday\"",
-            "For more help go [here](http://www.cobalt.net/crmbot)."
+            "For more help go [here](https://mikefactorial.com/dynamics-365-bot-sample-commands)."
         };
         public static string[] ActionPhrases = new string[]
         {
@@ -93,7 +93,7 @@ namespace CRMBot.Dialogs
                 entity["regardingobjectid"] = new EntityReference(this.SelectedEntity.LogicalName, this.SelectedEntity.Id);
 
                 DateTime date = DateTime.MinValue;
-                EntityRecommendation dateEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.DateTime);
+                EntityRecommendation dateEntity = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.DateTime);
 
                 if (dateEntity != null)
                 {
@@ -145,7 +145,7 @@ namespace CRMBot.Dialogs
             ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
             int selection = -1;
 
-            EntityRecommendation ordinal = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.Ordinal);
+            EntityRecommendation ordinal = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.Ordinal);
             if (ordinal != null || Int32.TryParse(result.Query, out selection))
             {
                 bool gotIndex = true;
@@ -303,8 +303,8 @@ namespace CRMBot.Dialogs
             {
                 ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
                 EntityMetadata metadata = chatState.RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
-                EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeName, EntityTypeNames.DisplayField);
-                EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeValue);
+                EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.AttributeName, EntityTypeNames.DisplayField);
+                EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId, true, EntityTypeNames.AttributeValue, EntityTypeNames.LastName, EntityTypeNames.FirstName, EntityTypeNames.DateTime);
                 string displayName = RetrieveEntityDisplayName(metadata, false);
                 if (attributeName != null && attributeValue != null)
                 {
@@ -338,16 +338,16 @@ namespace CRMBot.Dialogs
         public async Task Create(IDialogContext context, LuisResult result)
         {
             ChatState chatState = ChatState.RetrieveChatState(channelId, userId);
-            EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.EntityType);
+            EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.EntityType);
             if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
             {
                 EntityMetadata metadata = chatState.RetrieveEntityMetadata(entityTypeEntity.Entity);
                 if (metadata != null)
                 {
-                    EntityRecommendation firstName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.FirstName);
-                    EntityRecommendation lastName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.LastName);
-                    EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeName, EntityTypeNames.DisplayField);
-                    EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeValue);
+                    EntityRecommendation firstName = result.RetrieveEntity(this.channelId, this.userId, true, EntityTypeNames.FirstName);
+                    EntityRecommendation lastName = result.RetrieveEntity(this.channelId, this.userId, true, EntityTypeNames.LastName);
+                    EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.AttributeName, EntityTypeNames.DisplayField);
+                    EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId, true, EntityTypeNames.AttributeValue, EntityTypeNames.LastName, EntityTypeNames.FirstName, EntityTypeNames.DateTime);
 
                     Entity entity = new Entity(entityTypeEntity.Entity);
                     if (attributeValue != null)
@@ -416,7 +416,7 @@ namespace CRMBot.Dialogs
             string entityDisplayName = this.FindEntity(result, false);
 
             string parentEntity = string.Empty;
-            EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.EntityType);
+            EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.EntityType);
             if ((this.SelectedEntity == null || previouslySelectedEntityId == this.SelectedEntity.Id) && entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
             {
                 EntityMetadata entityMetadata = chatState.RetrieveEntityMetadata(entityTypeEntity.Entity);
@@ -454,14 +454,14 @@ namespace CRMBot.Dialogs
 
                     string whenString = string.Empty;
 
-                    EntityRecommendation dateEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.DateTime);
+                    EntityRecommendation dateEntity = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.DateTime);
                     if (dateEntity != null)
                     {
                         List<DateTime> dates = dateEntity.ParseDateTimes();
                         if (dates != null && dates.Count > 0)
                         {
                             string action = "created";
-                            EntityRecommendation actionEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.Action);
+                            EntityRecommendation actionEntity = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.Action);
                             if (actionEntity != null)
                             {
                                 action = actionEntity.Entity;
@@ -534,7 +534,7 @@ namespace CRMBot.Dialogs
                 if (this.SelectedEntity != null)
                 {
                     EntityMetadata metadata = ChatState.RetrieveChatState(this.channelId, this.userId).RetrieveEntityMetadata(this.SelectedEntity.LogicalName);
-                    EntityRecommendation displayField = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.DisplayField, EntityTypeNames.AttributeName);
+                    EntityRecommendation displayField = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.DisplayField, EntityTypeNames.AttributeName);
                     string displayName = RetrieveEntityDisplayName(metadata, false);
                     if (displayField != null)
                     {
@@ -580,7 +580,7 @@ namespace CRMBot.Dialogs
             }
             else
             {
-                EntityRecommendation subjectEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeValue);
+                EntityRecommendation subjectEntity = result.RetrieveEntity(this.channelId, this.userId, true, EntityTypeNames.AttributeValue, EntityTypeNames.LastName, EntityTypeNames.FirstName, EntityTypeNames.DateTime);
                 string subject = "Attachment";
                 if (subjectEntity != null)
                 {
@@ -808,10 +808,16 @@ namespace CRMBot.Dialogs
 
             message.AttachmentLayout = "carousel";
             await context.PostAsync(message);
+            if (FilteredEntities.Length == 1)
+            {
+                this.SelectedEntity = FilteredEntities[0];
+            }
+            /*
             if (FilteredEntities.Length == 0)
             {
                 ShowCurrentRecordSelection(context, result, string.Empty);
             }
+            */
         }
 
         protected string FindEntity(LuisResult result, bool ignoreAttributeNameAndValue)
@@ -820,7 +826,7 @@ namespace CRMBot.Dialogs
             this.FilteredEntities = new Entity[] { };
             string entityDisplayName = string.Empty;
             this.SelectedEntity = null;
-            EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.EntityType);
+            EntityRecommendation entityTypeEntity = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.EntityType);
             if (entityTypeEntity != null && !string.IsNullOrEmpty(entityTypeEntity.Entity))
             {
                 ChatState chatState = ChatState.RetrieveChatState(this.channelId, this.userId);
@@ -833,11 +839,11 @@ namespace CRMBot.Dialogs
                         entityDisplayName = metadata.DisplayName.UserLocalizedLabel.Label;
                     }
 
-                    EntityRecommendation dateEntity = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.DateTime);
-                    EntityRecommendation firstName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.FirstName);
-                    EntityRecommendation lastName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.LastName);
-                    EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeName, EntityTypeNames.DisplayField);
-                    EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId, EntityTypeNames.AttributeValue);
+                    EntityRecommendation dateEntity = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.DateTime);
+                    EntityRecommendation firstName = result.RetrieveEntity(this.channelId, this.userId, true, EntityTypeNames.FirstName);
+                    EntityRecommendation lastName = result.RetrieveEntity(this.channelId, this.userId, true, EntityTypeNames.LastName);
+                    EntityRecommendation attributeName = result.RetrieveEntity(this.channelId, this.userId, false, EntityTypeNames.AttributeName, EntityTypeNames.DisplayField);
+                    EntityRecommendation attributeValue = result.RetrieveEntity(this.channelId, this.userId, true, EntityTypeNames.AttributeValue, EntityTypeNames.LastName, EntityTypeNames.FirstName, EntityTypeNames.DateTime);
 
                     using (OrganizationWebProxyClient serviceProxy = chatState.CreateOrganizationService())
                     {
