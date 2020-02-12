@@ -25,7 +25,7 @@ namespace CRMBot
             TableQuery<ConnectionInformationEntity> query = new TableQuery<ConnectionInformationEntity>().Where(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, userAddress));
             return table.ExecuteQuery(query).FirstOrDefault();
             */
-            return new ConnectionInformationEntity(userAddress, "https://cobaltlab.api.crm.dynamics.com/XRMServices/2011/Organization.svc", "crm.partner@cobaltco.onmicrosoft.com", "pass@word1");
+            return new ConnectionInformationEntity(userAddress, "https://whatever/XRMServices/2011/Organization.svc", "test@test.test", "password");
         }
     }
 }
